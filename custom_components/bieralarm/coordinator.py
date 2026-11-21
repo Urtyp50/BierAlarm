@@ -63,6 +63,7 @@ class BierData:
     # store -> branches within the radius (None = no radius set or unknown)
     nearby: dict[str, list[dict]] | None = None
     out_of_range: list[str] = field(default_factory=list)
+    home_address: str | None = None
 
 
 class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
@@ -156,6 +157,7 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
                 _LOGGER.warning("BierAlarm: store locations failed: %s", err)
                 data.errors["umkreis"] = f"Filialen im Umkreis nicht abrufbar: {err}"
                 data.nearby = (self._cache.get("nearby") or {}).get("stores")
+            data.home_address = await self._home_address()
         stores = self.stores_in_range(data)
         data.out_of_range = [s for s in self.stores if s not in stores]
         jobs: dict[str, Any] = {}
@@ -208,9 +210,31 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
         )
 
     # ---------------------------------------------------------------- sources
+    async def _home_address(self) -> str | None:
+        """Address of the home location, looked up once and cached (shown in the card)."""
+        lat, lon = self.hass.config.latitude, self.hass.config.longitude
+        key = f"{lat:.5f},{lon:.5f}"
+        cached = self._cache.get("home_address") or {}
+        if cached.get("key") == key:
+            return cached.get("text")
+        try:
+            async with self._session.get(
+                nearby.REVERSE_URL,
+                params=nearby.reverse_params(lat, lon),
+                headers={"User-Agent": nearby.USER_AGENT},
+                timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT),
+            ) as resp:
+                resp.raise_for_status()
+                text = nearby.parse_address(await resp.json(content_type=None))
+        except (aiohttp.ClientError, TimeoutError, ValueError) as err:
+            _LOGGER.debug("BierAlarm: address lookup failed: %s", err)
+            return cached.get("text")  # try again next update
+        self._cache["home_address"] = {"key": key, "text": text}
+        return text
+
     async def _nearby(self) -> dict[str, list[dict]]:
         lat, lon, radius = self.hass.config.latitude, self.hass.config.longitude, self.radius_km
-        key = f"{lat:.5f},{lon:.5f},{radius},{','.join(sorted(self.stores))}"
+        key = f"v2,{lat:.5f},{lon:.5f},{radius},{','.join(sorted(self.stores))}"
         cached = self._cache.get("nearby") or {}
         if cached.get("key") == key and (
             dt_util.utcnow() - dt_util.parse_datetime(cached["fetched"]) < NEARBY_MAX_AGE

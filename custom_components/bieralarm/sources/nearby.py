@@ -63,8 +63,36 @@ def parse(data: dict, lat: float, lon: float, radius_km: float) -> dict[str, lis
                 "name": tags.get("name") or tags.get("brand") or store,
                 "address": ", ".join(x for x in (street, city) if x),
                 "distance_km": round(km, 1),
+                "lat": round(point["lat"], 5),
+                "lon": round(point["lon"], 5),
             }
         )
     for branches in found.values():
         branches.sort(key=lambda b: b["distance_km"])
     return found
+
+
+REVERSE_URL = "https://nominatim.openstreetmap.org/reverse"
+
+
+def reverse_params(lat: float, lon: float) -> dict:
+    """Ask OpenStreetMap once for the street address of the start point."""
+    return {
+        "format": "jsonv2",
+        "lat": f"{lat:.5f}",
+        "lon": f"{lon:.5f}",
+        "zoom": 18,
+        "addressdetails": 1,
+        "accept-language": "de",
+    }
+
+
+def parse_address(data: dict) -> str | None:
+    """'Musterstraße 1, 4400 Steyr' from a Nominatim reverse answer."""
+    a = (data or {}).get("address") or {}
+    street = a.get("road") or a.get("pedestrian") or a.get("path") or a.get("hamlet")
+    line1 = " ".join(x for x in (street, a.get("house_number")) if x)
+    place = a.get("city") or a.get("town") or a.get("village") or a.get("municipality")
+    line2 = " ".join(x for x in (a.get("postcode"), place) if x)
+    text = ", ".join(x for x in (line1, line2) if x)
+    return text or (data or {}).get("display_name")

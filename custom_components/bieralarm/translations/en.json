@@ -26,7 +26,7 @@
           "favorite_brands": "e.g. Gösser, Stiegl, Ottakringer. You get an alarm when one of them is on offer.",
           "max_price_per_liter": "You also get an alarm when any beer is cheaper than this per liter.",
           "ai_task_entity": "PENNY and Lidl work without AI. BILLA only publishes a PDF, which is read by the AI once per week.",
-          "radius_km": "Only stores with a branch within this distance of the home location set in Home Assistant. 0 = all. Branches come from OpenStreetMap, which is asked for a coarsely rounded area around your home."
+          "radius_km": "Only stores with a branch within this distance of the home location set in Home Assistant. 0 = all. Branches come from OpenStreetMap, which is asked for a coarsely rounded area around your home. The start address is looked up once at OpenStreetMap and shown in the card."
         }
       }
     }
@@ -51,7 +51,7 @@
           "radius_km": "Radius around your home"
         },
         "data_description": {
-          "radius_km": "Only stores with a branch within this distance of the home location set in Home Assistant. 0 = all. Branches come from OpenStreetMap, which is asked for a coarsely rounded area around your home."
+          "radius_km": "Only stores with a branch within this distance of the home location set in Home Assistant. 0 = all. Branches come from OpenStreetMap, which is asked for a coarsely rounded area around your home. The start address is looked up once at OpenStreetMap and shown in the card."
         }
       }
     }
@@ -81,6 +81,14 @@
     "select": {
       "store_filter": {
         "name": "Store filter"
+      }
+    },
+    "number": {
+      "radius": {
+        "name": "Radius"
+      },
+      "crate_limit": {
+        "name": "Alarm below crate price"
       }
     }
   },

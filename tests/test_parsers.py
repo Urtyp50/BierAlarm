@@ -143,3 +143,10 @@ def test_nearby_query_rounds_location():
     query = nearby.build_query(48.208512, 16.373123, 7, ["penny", "lidl", "custom"])
     assert "Q284688|Q151954" in query
     assert "48.2085" not in query and "16.3731" not in query
+
+
+def test_reverse_address():
+    answer = {"address": {"road": "Stadtplatz", "house_number": "27", "postcode": "4400", "town": "Steyr"}}
+    assert nearby.parse_address(answer) == "Stadtplatz 27, 4400 Steyr"
+    assert nearby.parse_address({"display_name": "Irgendwo"}) == "Irgendwo"
+    assert nearby.reverse_params(48.0381234, 14.4199876)["lat"] == "48.03812"

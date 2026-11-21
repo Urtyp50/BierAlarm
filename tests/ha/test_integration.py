@@ -145,6 +145,10 @@ async def test_radius_skips_far_stores(hass: HomeAssistant, mock_pages) -> None:
 
     hass.config.latitude, hass.config.longitude = 48.2085, 16.3731
     mock_pages.post(nearby.URL, text=(FIXTURES / "osm_wien.json").read_text(encoding="utf-8"))
+    mock_pages.get(
+        nearby.REVERSE_URL,
+        json={"address": {"road": "Stephansplatz", "house_number": "1", "postcode": "1010", "city": "Wien"}},
+    )
     entry = MockConfigEntry(
         domain=DOMAIN, title="BierAlarm", data={}, options={**OPTIONS, "radius_km": 2}
     )
@@ -158,6 +162,12 @@ async def test_radius_skips_far_stores(hass: HomeAssistant, mock_pages) -> None:
     assert not any(str(c[1]) == lidl.URL for c in mock_pages.mock_calls)
     attrs = hass.states.get("sensor.bieralarm_beer_deals").attributes
     assert attrs["nearby"]["PENNY"]["distance_km"] == 1.3
+    assert attrs["start_address"] == "Stephansplatz 1, 1010 Wien"
+    assert {b["store"] for b in attrs["branches"]} == {"PENNY", "BILLA PLUS"}
+    assert all("lat" in b and "lon" in b for b in attrs["branches"])
+    radius = hass.states.get("number.bieralarm_radius")
+    assert float(radius.state) == 2
+    assert radius.attributes["start_address"] == "Stephansplatz 1, 1010 Wien"
     assert attrs["deals"][0]["distance_km"] == 1.3
 
     # Second refresh uses the cached locations
@@ -169,3 +179,35 @@ async def test_radius_skips_far_stores(hass: HomeAssistant, mock_pages) -> None:
     assert "Mozilla" not in ua  # OpenStreetMap answers 406 to browser-like agents
     await entry.runtime_data.async_refresh()
     assert posts() == 1
+
+
+async def test_radius_number_updates_options(hass: HomeAssistant, mock_pages) -> None:
+    entry = MockConfigEntry(domain=DOMAIN, title="BierAlarm", data={}, options=OPTIONS)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert float(hass.states.get("number.bieralarm_radius").state) == 0
+    await hass.services.async_call(
+        "number", "set_value", {"entity_id": "number.bieralarm_radius", "value": 0}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert entry.options["radius_km"] == 0
+
+
+async def test_crate_limit_rematches_without_reload(hass: HomeAssistant, mock_pages) -> None:
+    entry = MockConfigEntry(domain=DOMAIN, title="BierAlarm", data={}, options={**OPTIONS, "favorite_brands": ""})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = entry.runtime_data
+    assert float(hass.states.get("number.bieralarm_alarm_below_crate_price").state) == 15
+    before = hass.states.get("sensor.bieralarm_beer_deals").attributes["matches"]
+    await hass.services.async_call(
+        "number", "set_value",
+        {"entity_id": "number.bieralarm_alarm_below_crate_price", "value": 0}, blocking=True,
+    )
+    await hass.async_block_till_done()
+    assert entry.options["max_price_per_liter"] == 0
+    assert entry.runtime_data is coordinator
+    assert before > 0
+    assert hass.states.get("sensor.bieralarm_beer_deals").attributes["matches"] == 0

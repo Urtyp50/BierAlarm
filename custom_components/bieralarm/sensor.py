@@ -36,7 +36,7 @@ class DealCountSensor(_Base):
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "Aktionen"
     # The full list is for dashboards only, keep it out of the database.
-    _unrecorded_attributes = frozenset({"deals"})
+    _unrecorded_attributes = frozenset({"deals", "branches", "start_address"})
 
     def __init__(self, coordinator: BierAlarmCoordinator) -> None:
         super().__init__(coordinator, "deals")
@@ -53,10 +53,17 @@ class DealCountSensor(_Base):
             "matches": len(matches),
             "errors": data.errors,
             "radius_km": self.coordinator.radius_km,
+            "start_address": data.home_address,
             "nearby": {
                 STORE_NAMES.get(s, s): branches[0] for s, branches in (data.nearby or {}).items() if branches
             },
             "out_of_range": [STORE_NAMES.get(s, s) for s in data.out_of_range],
+            # every branch within the radius, for the map in the card
+            "branches": [
+                {**b, "store": STORE_NAMES.get(s, s)}
+                for s, branches in (data.nearby or {}).items()
+                for b in branches[:8]
+            ],
             "deals": [
                 {
                     "store": STORE_NAMES.get(d.store, d.store),

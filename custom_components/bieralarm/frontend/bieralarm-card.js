@@ -20,7 +20,8 @@ class BierAlarmCard extends HTMLElement {
     this._cfg = Object.assign({
       // Entity ids are found automatically (platform bieralarm); set them only to override.
       title: "BierAlarm", subtitle: "Bieraktionen pro 20er-Kiste",
-      deals: null, best_crate: null, best_liter: null, filter: null, store_filter: null,
+      deals: null, best_crate: null, best_liter: null, filter: null, store_filter: null, radius: null, crate_limit: null,
+      map: true,
       max_rows: 40,
       store_logos: true,   // false = only coloured text badges
       logos: {}            // override, e.g. { "PENNY": "/local/penny.png" }
@@ -47,6 +48,8 @@ class BierAlarmCard extends HTMLElement {
     C.best_liter = C.best_liter || by("sensor", "best_price");
     C.filter = C.filter || by("text", "filter");
     C.store_filter = C.store_filter || by("select", "store_filter");
+    C.radius = C.radius || by("number", "radius");
+    C.crate_limit = C.crate_limit || by("number", "crate_limit");
     this._ids = true;
   }
   _beerSwitches() {
@@ -145,6 +148,42 @@ class BierAlarmCard extends HTMLElement {
   .tile.att { box-shadow:inset 0 0 0 1px rgba(239,108,0,.5); }
   .tile.att b { color:#ef6c00; }
   .hide { display:none; }
+  .map { position:relative; height:220px; border-radius:12px; overflow:hidden; background:var(--secondary-background-color);
+         box-shadow:inset 0 0 0 1px var(--divider-color); }
+  .mtiles img { position:absolute; max-width:none; user-select:none; pointer-events:none; }
+  .mtiles.dark img { filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9); }
+  .mtiles img { filter:saturate(.75); }
+  .mcirc { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+  .mpins > div { position:absolute; transform:translate(-50%,-50%); }
+  .pin { width:24px; height:24px; border-radius:7px; overflow:hidden; background:#fff; cursor:default;
+         box-shadow:0 1px 4px rgba(0,0,0,.35), 0 0 0 2px #fff; display:flex; align-items:center; justify-content:center; }
+  .pin.near { width:30px; height:30px; border-radius:8px; z-index:2; }
+  .pin img { width:100%; height:100%; object-fit:contain; }
+  .pin span { font-size:.55rem; font-weight:700; color:#fff; }
+  .home { width:30px; height:30px; border-radius:50%; background:#e65100; color:#fff; z-index:3;
+          box-shadow:0 1px 4px rgba(0,0,0,.35), 0 0 0 3px #fff; display:flex; align-items:center; justify-content:center; }
+  .home ha-icon { --mdc-icon-size:18px; }
+  .mattr { position:absolute; right:0; bottom:0; font-size:.6rem; padding:1px 5px; background:rgba(255,255,255,.75); color:#333;
+           border-top-left-radius:6px; }
+  .moff { position:absolute; inset:0; display:none; align-items:center; justify-content:center; font-size:.82rem;
+          color:var(--secondary-text-color); text-align:center; padding:0 16px; }
+  .map.off .moff { display:flex; }
+  .map.off .mattr, .map.off .mcirc, .map.off .mtiles, .map.off .mpins { display:none; }
+  .urow { display:flex; align-items:center; gap:10px; margin-top:10px; }
+  .uic { --mdc-icon-size:22px; color:#e65100; flex:0 0 auto; }
+  .addr { flex:1; min-width:0; }
+  .addr em { display:block; font-style:normal; font-size:.72rem; color:var(--secondary-text-color); }
+  .addr b { display:block; font-size:.88rem; font-weight:600; color:var(--primary-text-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .step { display:flex; align-items:center; gap:2px; border:1px solid var(--divider-color); border-radius:12px;
+          background:var(--secondary-background-color); padding:2px; flex:0 0 auto; }
+  .step button { width:32px; height:32px; border:0; border-radius:10px; background:transparent; cursor:pointer;
+                 color:var(--primary-text-color); display:flex; align-items:center; justify-content:center; }
+  .step button:hover { background:rgba(230,81,0,.12); color:#e65100; }
+  .step button:disabled { opacity:.35; cursor:default; background:transparent; }
+  .step ha-icon { --mdc-icon-size:18px; }
+  .step b { min-width:54px; text-align:center; font-size:.9rem; font-weight:600; font-variant-numeric:tabular-nums; color:var(--primary-text-color); }
+  .step b.pend { color:#e65100; }
+  .urow.lim { margin:0 0 10px; padding-bottom:10px; border-bottom:1px dashed var(--divider-color); }
   .lbl.tog { cursor:pointer; user-select:none; }
   .lbl.tog ha-icon { --mdc-icon-size:18px; transition:transform .25s ease; margin-left:2px; }
   .lbl.tog.open ha-icon { transform:rotate(180deg); }
@@ -173,6 +212,25 @@ class BierAlarmCard extends HTMLElement {
       <div class="end" id="eM"><em>Märkte</em><b id="vM">–</b><small id="sM"></small></div>
     </div>
   </div>
+  <div class="sec" id="secU">
+    <div class="lbl">Umkreis<span id="lU"></span></div>
+    <div class="map" id="map">
+      <div class="mtiles" id="mt"></div>
+      <svg class="mcirc" id="mc"><circle id="mcc" fill="rgba(230,81,0,.08)" stroke="#e65100" stroke-width="1.5" stroke-dasharray="5 4"></circle></svg>
+      <div class="mpins" id="mp"></div>
+      <div class="mattr">© OpenStreetMap-Mitwirkende</div>
+      <div class="moff" id="moff">Umkreis aus – alle Märkte werden gezeigt</div>
+    </div>
+    <div class="urow">
+      <ha-icon class="uic" icon="mdi:home-map-marker"></ha-icon>
+      <div class="addr"><em>Startpunkt</em><b id="addr">–</b></div>
+      <div class="step">
+        <button id="rm" title="Umkreis verkleinern"><ha-icon icon="mdi:minus"></ha-icon></button>
+        <b id="rv">–</b>
+        <button id="rp" title="Umkreis vergrößern"><ha-icon icon="mdi:plus"></ha-icon></button>
+      </div>
+    </div>
+  </div>
   <div class="sec">
     <div class="lbl">Filter</div>
     <div class="search">
@@ -189,6 +247,15 @@ class BierAlarmCard extends HTMLElement {
   </div>
   <div class="sec">
     <div class="lbl tog" id="tB">Benachrichtigen bei<span id="lB"></span><ha-icon id="cB" icon="mdi:chevron-down"></ha-icon></div>
+    <div class="urow lim">
+      <ha-icon class="uic" icon="mdi:bell-ring-outline"></ha-icon>
+      <div class="addr"><em>Preis-Alarm für jedes Bier</em><b id="ltx">–</b></div>
+      <div class="step">
+        <button id="lm" title="Grenze senken"><ha-icon icon="mdi:minus"></ha-icon></button>
+        <b id="lv">–</b>
+        <button id="lp" title="Grenze erhöhen"><ha-icon icon="mdi:plus"></ha-icon></button>
+      </div>
+    </div>
     <div id="brands"></div>
     <button class="toggle" id="bB"></button>
   </div>
@@ -203,7 +270,9 @@ class BierAlarmCard extends HTMLElement {
     this._el = { ic: $("ic"), ici: $("ici"), hn: $("hn"), hs: $("hs"), pill: $("pill"), pt: $("pt"),
       vK: $("vK"), sK: $("sK"), vL: $("vL"), sL: $("sL"), vM: $("vM"), sM: $("sM"),
       q: $("q"), qx: $("qx"), stores: $("stores"), lA: $("lA"), rows: $("rows"), more: $("more"),
-      lB: $("lB"), brands: $("brands"), tB: $("tB"), bB: $("bB"), secD: $("secD"), tDi: $("tDi") };
+      lB: $("lB"), brands: $("brands"), tB: $("tB"), bB: $("bB"),
+      map: $("map"), mt: $("mt"), mc: $("mc"), mcc: $("mcc"), mp: $("mp"), lU: $("lU"), addr: $("addr"),
+      rv: $("rv"), rm: $("rm"), rp: $("rp"), lv: $("lv"), lm: $("lm"), lp: $("lp"), ltx: $("ltx"), secD: $("secD"), tDi: $("tDi") };
     $("ic").addEventListener("click", () => this._more(C.deals));
     try { this._open = localStorage.getItem("bieralarm-card-open") === "1"; } catch (e) { this._open = false; }
     const flip = () => {
@@ -212,6 +281,28 @@ class BierAlarmCard extends HTMLElement {
       this._render();
     };
     $("tB").addEventListener("click", flip);
+    // −/+ buttons: change locally at once, send to Home Assistant after a short pause
+    const stepper = (key, lo, hi) => (d) => {
+      const ent = this._cfg[key];
+      const cur = this._pend[key] !== undefined ? this._pend[key] : (this._v(ent) || 0);
+      this._pend[key] = Math.round(Math.max(lo, Math.min(hi, cur + d)) * 100) / 100;
+      this._render();
+      clearTimeout(this._pendT[key]);
+      this._pendT[key] = setTimeout(() => {
+        this._hass.callService("number", "set_value", { entity_id: ent, value: this._pend[key] })
+          .finally(() => { delete this._pend[key]; this._mapSig = null; this._render(); });
+      }, 1200);
+    };
+    this._pend = {}; this._pendT = {};
+    const rStep = stepper("radius", 0, 100), lStep = stepper("crate_limit", 0, 50);
+    $("rm").addEventListener("click", () => rStep(-1));
+    $("rp").addEventListener("click", () => rStep(1));
+    $("lm").addEventListener("click", () => lStep(-0.5));
+    $("lp").addEventListener("click", () => lStep(0.5));
+    if (window.ResizeObserver) {
+      this._ro = new ResizeObserver(() => { this._mapSig = null; this._render(); });
+      this._ro.observe($("map"));
+    }
     $("bB").addEventListener("click", flip);
     $("eK").addEventListener("click", () => this._more(C.best_crate));
     $("eL").addEventListener("click", () => this._more(C.best_liter));
@@ -227,6 +318,78 @@ class BierAlarmCard extends HTMLElement {
     q.addEventListener("keydown", (e) => { if (e.key === "Enter") { clearTimeout(this._qT); this._setFilter(q.value); } });
     this._el.qx.addEventListener("click", () => { q.value = ""; this._typing = ""; clearTimeout(this._qT); this._setFilter(""); this._render(); });
     this._built = true;
+  }
+
+  _renderRadius(a) {
+    const E = this._el, C = this._cfg;
+    const no = this._o(C.radius);
+    const pend = this._pend.radius !== undefined;
+    const r = pend ? this._pend.radius : (no ? this._v(C.radius) || 0 : a.radius_km || 0);
+    E.rv.textContent = r ? r + " km" : "aus";
+    E.rv.classList.toggle("pend", pend);
+    E.rm.disabled = !no || r <= 0;
+    E.rp.disabled = !no || r >= 100;
+    E.addr.textContent = a.start_address || (this._hass.config && this._hass.config.location_name) || "Zuhause";
+    E.lU.textContent = pend ? "wird geändert …" : (a.branches ? a.branches.length + " Filialen" : "");
+    this._renderMap(pend ? 0 : (a.radius_km || 0), a.branches || []);
+  }
+
+  _renderMap(radius, branches) {
+    const E = this._el, C = this._cfg, cfg = this._hass.config || {};
+    const lat = cfg.latitude, lon = cfg.longitude;
+    const show = C.map && radius > 0 && typeof lat === "number";
+    E.map.classList.toggle("off", !show);
+    E.map.parentElement.querySelector(".moff").textContent =
+      this._pend.radius !== undefined ? "Umkreis wird geändert …" : "Umkreis aus – alle Märkte werden gezeigt";
+    if (!C.map) { E.map.style.display = "none"; return; }
+    if (!show) return;
+    const w = E.map.clientWidth || 400, h = E.map.clientHeight || 200;
+    const dark = !!(this._hass.themes && this._hass.themes.darkMode);
+    const cos = Math.cos(lat * Math.PI / 180);
+    // continuous zoom: the radius circle fills ~84 % of the shorter side; tiles are scaled to fit
+    const zf = Math.log2((156543.03 * cos * Math.min(w, h) * 0.42) / (radius * 1000));
+    const z = Math.max(8, Math.min(16, Math.ceil(zf)));
+    const k = Math.min(1, Math.pow(2, zf - z));   // 0.5 … 1
+    const T = 256 * k;                             // on-screen tile size
+    const sig = [w, h, z, k.toFixed(4), lat, lon, dark, radius, branches.map((b) => b.lat + "," + b.lon).join(";")].join("|");
+    if (this._mapSig === sig) return;
+    this._mapSig = sig;
+    const n = 256 * Math.pow(2, z);
+    const px = (la, lo) => {
+      const sn = Math.sin(la * Math.PI / 180);
+      return [(lo + 180) / 360 * n * k, (0.5 - Math.log((1 + sn) / (1 - sn)) / (4 * Math.PI)) * n * k];
+    };
+    const [cx, cy] = px(lat, lon);
+    const left = cx - w / 2, top = cy - h / 2;
+    let tiles = "";
+    const max = Math.pow(2, z);
+    for (let tx = Math.floor(left / T); tx <= Math.floor((left + w) / T); tx++) {
+      for (let ty = Math.floor(top / T); ty <= Math.floor((top + h) / T); ty++) {
+        if (ty < 0 || ty >= max) continue;
+        const x = ((tx % max) + max) % max;
+        tiles += `<img alt="" referrerpolicy="origin" src="https://tile.openstreetmap.org/${z}/${x}/${ty}.png" style="left:${(tx * T - left).toFixed(1)}px;top:${(ty * T - top).toFixed(1)}px;width:${T.toFixed(2)}px;height:${T.toFixed(2)}px">`;
+      }
+    }
+    E.mt.innerHTML = tiles;
+    E.mt.classList.toggle("dark", dark);
+    const mpp = 156543.03 * cos / Math.pow(2, z) / k;
+    E.mcc.setAttribute("cx", w / 2); E.mcc.setAttribute("cy", h / 2); E.mcc.setAttribute("r", (radius * 1000) / mpp);
+    const nearest = {};
+    branches.forEach((b) => { if (!nearest[b.store] || b.distance_km < nearest[b.store].distance_km) nearest[b.store] = b; });
+    const pins = branches.slice().sort((a, b) => (nearest[a.store] === a) - (nearest[b.store] === b)).map((b) => {
+      const [bx, by] = px(b.lat, b.lon);
+      const x = bx - left, y = by - top;
+      if (x < -20 || y < -20 || x > w + 20 || y > h + 20) return "";
+      const logo = C.store_logos ? (C.logos[b.store] || BA_LOGO[b.store]) : null;
+      const col = BA_STORE[b.store] || "#546e7a";
+      const tip = [b.store, b.address, this._fmt(b.distance_km, 1) + " km"].filter(Boolean).join(" · ");
+      const inner = logo ? `<img alt="" src="${this._esc(logo)}" referrerpolicy="no-referrer">` : `<span>${this._esc(b.store.slice(0, 2))}</span>`;
+      return `<div class="pin${nearest[b.store] === b ? " near" : ""}" style="left:${x}px;top:${y}px;background:${logo ? "#fff" : col}" title="${this._esc(tip)}">${inner}</div>`;
+    }).join("");
+    E.mp.innerHTML = pins + `<div class="home" style="left:${w / 2}px;top:${h / 2}px" title="Startpunkt"><ha-icon icon="mdi:home"></ha-icon></div>`;
+    E.mp.querySelectorAll(".pin img").forEach((img) => img.addEventListener("error", () => {
+      const pin = img.parentElement; pin.style.background = "#546e7a"; img.remove();
+    }));
   }
 
   _setFilter(v) {
@@ -295,6 +458,8 @@ class BierAlarmCard extends HTMLElement {
     E.vM.textContent = shops.length ? String(shops.length) : "–";
     E.sM.textContent = so ? so.state + " Aktionen" + (away.length ? " · " + away.join(", ") + " zu weit" : "") : "";
 
+    this._renderRadius(a);
+
     // filters
     const q = this._query();
     if (this._sr.activeElement !== E.q) E.q.value = this._typing !== null && this._typing !== undefined ? this._typing : (this._s(C.filter) || "").replace(/^(unknown|unavailable)$/, "");
@@ -350,6 +515,16 @@ class BierAlarmCard extends HTMLElement {
       });
     }
     E.more.textContent = shown.length > rows.length ? "… und " + (shown.length - rows.length) + " weitere in der Seitenleiste BierAlarm" : "";
+
+    // price alarm threshold
+    const ln = this._o(C.crate_limit);
+    const lp = this._pend.crate_limit !== undefined;
+    const lim = lp ? this._pend.crate_limit : (ln ? this._v(C.crate_limit) || 0 : 0);
+    E.lv.textContent = lim ? this._eur(lim) : "aus";
+    E.lv.classList.toggle("pend", lp);
+    E.lm.disabled = !ln || lim <= 0;
+    E.lp.disabled = !ln || lim >= 50;
+    E.ltx.textContent = lim ? "🔔 wenn die 20er-Kiste höchstens " + this._eur(lim) + " kostet" : "aus – nur die gewählten Sorten";
 
     // beer switches, grouped by brand
     const beers = this._beerSwitches();

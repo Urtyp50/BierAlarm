@@ -26,7 +26,7 @@ from .const import (
 )
 from .coordinator import BierAlarmCoordinator
 
-PLATFORMS = [Platform.SELECT, Platform.SENSOR, Platform.SWITCH, Platform.TEXT]
+PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.SENSOR, Platform.SWITCH, Platform.TEXT]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 type BierAlarmConfigEntry = ConfigEntry[BierAlarmCoordinator]
@@ -78,8 +78,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: BierAlarmConfigEntry) -
 
 
 def _reload_relevant(coordinator: BierAlarmCoordinator) -> tuple:
-    """Everything except the favourite brands needs a reload (new fetch)."""
-    opts = {k: v for k, v in coordinator.opts.items() if k != CONF_FAVORITE_BRANDS}
+    """Everything except the alarm rules (favourites, price limit) needs a reload (new fetch)."""
+    opts = {
+        k: v
+        for k, v in coordinator.opts.items()
+        if k not in (CONF_FAVORITE_BRANDS, CONF_MAX_PRICE_PER_LITER)
+    }
     return (sorted(opts.items(), key=str), coordinator.brand_names)
 
 

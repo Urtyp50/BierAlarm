@@ -17,7 +17,8 @@ Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreic
 - **Preis pro 20er-Kiste**: Jede Aktion wird auf 20 × 0,5 l (10 Liter) umgerechnet, damit Dosen, Träger und Kisten vergleichbar sind (ohne Pfand)
 - **Seitenleiste „BierAlarm“**: alle Aktionen als Karten, sortierbar nach Kistenpreis, Preis, Rabatt oder Ablauf, mit Filter nach Markt und Suche
 - **Sensoren**: `sensor.bieralarm_bieraktionen` (Anzahl plus Liste), `sensor.bieralarm_bester_preis_pro_20er_kiste` und `sensor.bieralarm_bester_literpreis`
-- **Umkreis**: nur Märkte mit einer Filiale im Umkreis (z. B. 7 km) um den Standort aus den Home-Assistant-Einstellungen. Die Filialen kommen einmal pro Woche von OpenStreetMap; dabei wird nur ein grob gerundeter Bereich abgefragt.
+- **Umkreis** (`number.bieralarm_radius`, auch in der Karte mit − / + änderbar): nur Märkte mit einer Filiale im Umkreis (z. B. 7 km) um den Standort aus den Home-Assistant-Einstellungen. Die Filialen kommen einmal pro Woche von OpenStreetMap; dabei wird nur ein grob gerundeter Bereich abgefragt.
+- **Preis-Alarm** (`number.bieralarm_alarm_below_crate_price`): Glocke und Benachrichtigung, wenn eine 20er-Kiste höchstens so viel kostet. 0 = nur die gewählten Sorten.
 - **Sorten-Schalter**: `switch.bieralarm_alarm_zipfer_urtyp`, `switch.bieralarm_alarm_zipfer_marzen` usw., ein Schalter pro Biersorte: an = benachrichtigen. Sie sind mit *Lieblingsmarken* in den Einstellungen verbunden. Dort trägst du auch eigene Sorten ein; nur die Marke (z. B. `Zipfer`) heißt alle Sorten.
 - **Filter für Dashboards**: `text.bieralarm_filter` (Suchtext, z. B. `Urtyp`) und `select.bieralarm_store_filter` (Markt)
 - **Alarm**: Benachrichtigung über eine `notify`-Entität (z. B. dein Handy) oder als Home-Assistant-Meldung. Jede Aktion wird nur einmal gemeldet.
@@ -50,7 +51,7 @@ Die Karte `custom:bieralarm-card` kommt mit der Integration mit, es muss keine R
 type: custom:bieralarm-card
 ```
 
-Sie zeigt den besten Kistenpreis, Suche und Markt-Filter, alle Aktionen mit Preis pro 20er-Kiste und Entfernung sowie die Sorten-Schalter, gruppiert nach Marke.
+Sie zeigt den besten Kistenpreis, eine kleine Karte mit den Filialen im Umkreis und der Adresse des Startpunkts, Suche und Markt-Filter, alle Aktionen mit Preis pro 20er-Kiste und Entfernung sowie die Sorten-Schalter, gruppiert nach Marke.
 
 ## Einstellungen
 
