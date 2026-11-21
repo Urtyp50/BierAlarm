@@ -19,6 +19,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     AI_STORES,
+    BRANDS,
     CONF_AI_TASK_ENTITY,
     CONF_BILLA_REGION,
     CONF_EXTRA_LEAFLETS,
@@ -91,6 +92,28 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
     def favorite_brands(self) -> list[str]:
         raw = self.opts.get(CONF_FAVORITE_BRANDS) or ""
         return [b.strip() for b in raw.split(",") if b.strip()]
+
+    @property
+    def brand_names(self) -> list[str]:
+        """Brands that get a switch: the fixed list plus any typed favourite."""
+        known = {b.lower() for b in BRANDS}
+        return BRANDS + [b for b in self.favorite_brands if b.lower() not in known]
+
+    def favorite_options(self, brand: str, on: bool) -> dict[str, Any]:
+        """Options with `brand` added to or removed from the favourite brands."""
+        brands = [b for b in self.favorite_brands if b.lower() != brand.lower()]
+        if on:
+            brands.append(brand)
+        return {**self.config_entry.options, CONF_FAVORITE_BRANDS: ", ".join(brands)}
+
+    async def async_rematch(self) -> None:
+        """Favourite brands changed: re-evaluate alarms without fetching again."""
+        if self.data is None:
+            return
+        self.data.matches = [d.id for d in self.data.deals if self.is_match(d)]
+        await self._announce(self.data)
+        await self._store.async_save(self._cache)
+        self.async_update_listeners()
 
     @property
     def max_price_per_liter(self) -> float | None:

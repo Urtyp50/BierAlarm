@@ -90,3 +90,42 @@ async def test_setup_sensors_panel_ws_and_alarm(hass: HomeAssistant, mock_pages,
 
     assert await hass.config_entries.async_unload(entry.entry_id)
     assert "bieralarm" not in hass.data.get("frontend_panels", {})
+
+
+async def test_brand_switches_and_filters(hass: HomeAssistant, mock_pages) -> None:
+    assert await async_setup_component(hass, "persistent_notification", {})
+    events = []
+    hass.bus.async_listen("bieralarm_new_deal", events.append)
+    entry = MockConfigEntry(domain=DOMAIN, title="BierAlarm", data={}, options=OPTIONS)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = entry.runtime_data
+    calls = len(mock_pages.mock_calls)
+
+    switches = {s.entity_id: s for s in hass.states.async_all("switch")}
+    assert hass.states.get("switch.bieralarm_alarm_ottakringer").state == "on", list(switches)
+    assert hass.states.get("switch.bieralarm_alarm_gosser").state == "off"
+
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": "switch.bieralarm_alarm_gosser"}, blocking=True
+    )
+    await hass.services.async_call(
+        "switch", "turn_off", {"entity_id": "switch.bieralarm_alarm_ottakringer"}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert entry.options["favorite_brands"] == "Gösser"
+    assert entry.runtime_data is coordinator  # no reload ...
+    assert len(mock_pages.mock_calls) == calls  # ... and no new download
+    assert hass.states.get("switch.bieralarm_alarm_gosser").state == "on"
+    assert any("Gösser" in e.data["title"] for e in events)
+
+    await hass.services.async_call(
+        "text", "set_value", {"entity_id": "text.bieralarm_filter", "value": " Urtyp "}, blocking=True
+    )
+    assert hass.states.get("text.bieralarm_filter").state == "Urtyp"
+    select = hass.states.get("select.bieralarm_store_filter")
+    assert select.attributes["options"] == ["Alle", "PENNY", "Lidl"]
+    deals = hass.states.get("sensor.bieralarm_beer_deals").attributes["deals"]
+    crates = [d["price_per_crate"] for d in deals if d["price_per_crate"] is not None]
+    assert crates == sorted(crates)

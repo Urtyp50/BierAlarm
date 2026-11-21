@@ -61,6 +61,21 @@
       "best_crate_price": {
         "name": "Best price per 20 crate"
       }
+    },
+    "switch": {
+      "brand": {
+        "name": "Alarm {brand}"
+      }
+    },
+    "text": {
+      "filter": {
+        "name": "Filter"
+      }
+    },
+    "select": {
+      "store_filter": {
+        "name": "Store filter"
+      }
     }
   },
   "services": {

@@ -26,7 +26,7 @@ from .const import (
 )
 from .coordinator import BierAlarmCoordinator
 
-PLATFORMS = [Platform.SENSOR]
+PLATFORMS = [Platform.SELECT, Platform.SENSOR, Platform.SWITCH, Platform.TEXT]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 type BierAlarmConfigEntry = ConfigEntry[BierAlarmCoordinator]
@@ -54,6 +54,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: BierAlarmConfigEntry) -> bool:
     coordinator = BierAlarmCoordinator(hass, entry)
+    hass.data[f"{DOMAIN}_options_{entry.entry_id}"] = _reload_relevant(coordinator)
     await coordinator.async_load_cache()
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
@@ -66,6 +67,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: BierAlarmConfigEntry) ->
 
 async def async_unload_entry(hass: HomeAssistant, entry: BierAlarmConfigEntry) -> bool:
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unloaded:
+        hass.data.pop(f"{DOMAIN}_options_{entry.entry_id}", None)
     if unloaded and not [
         e for e in hass.config_entries.async_loaded_entries(DOMAIN) if e.entry_id != entry.entry_id
     ]:
@@ -74,7 +77,19 @@ async def async_unload_entry(hass: HomeAssistant, entry: BierAlarmConfigEntry) -
     return unloaded
 
 
+def _reload_relevant(coordinator: BierAlarmCoordinator) -> tuple:
+    """Everything except the favourite brands needs a reload (new fetch)."""
+    opts = {k: v for k, v in coordinator.opts.items() if k != CONF_FAVORITE_BRANDS}
+    return (sorted(opts.items(), key=str), coordinator.brand_names)
+
+
 async def _async_reload(hass: HomeAssistant, entry: BierAlarmConfigEntry) -> None:
+    coordinator = entry.runtime_data
+    key = f"{DOMAIN}_options_{entry.entry_id}"
+    if hass.data.get(key) == _reload_relevant(coordinator):
+        # Only a brand switch was flipped: no need to download everything again.
+        await coordinator.async_rematch()
+        return
     await hass.config_entries.async_reload(entry.entry_id)
 
 

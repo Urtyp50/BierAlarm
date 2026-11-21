@@ -71,3 +71,30 @@ PANEL_STATIC_URL = "/bieralarm_static"
 
 STORAGE_VERSION = 1
 STORAGE_KEY = f"{DOMAIN}.cache"
+
+# Brands that get an on/off switch ("benachrichtigen bei ...") in Home Assistant.
+# Favourite brands typed in the options that are not listed here get a switch too.
+BRANDS = [
+    "Zipfer",
+    "Gösser",
+    "Stiegl",
+    "Ottakringer",
+    "Puntigamer",
+    "Kaiser",
+    "Schwechater",
+    "Egger",
+    "Wieselburger",
+    "Freistädter",
+    "Murauer",
+    "Hirter",
+    "Trumer",
+    "Edelweiss",
+    "Villacher",
+    "Schladminger",
+    "Fohrenburger",
+    "Franziskaner",
+    "Budweiser",
+    "Heineken",
+]
+
+FILTER_ALL = "Alle"

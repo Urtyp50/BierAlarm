@@ -61,6 +61,21 @@
       "best_crate_price": {
         "name": "Bester Preis pro 20er-Kiste"
       }
+    },
+    "switch": {
+      "brand": {
+        "name": "Alarm {brand}"
+      }
+    },
+    "text": {
+      "filter": {
+        "name": "Filter"
+      }
+    },
+    "select": {
+      "store_filter": {
+        "name": "Markt-Filter"
+      }
     }
   },
   "services": {

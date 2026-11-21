@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import BierAlarmConfigEntry
-from .const import DOMAIN, STORE_NAMES
+from .const import STORE_NAMES
 from .coordinator import BierAlarmCoordinator
+from .entity import BierAlarmEntity
+
+MAX_DEALS_ATTR = 60
 
 
 async def async_setup_entry(
@@ -24,26 +25,18 @@ async def async_setup_entry(
     )
 
 
-class _Base(CoordinatorEntity[BierAlarmCoordinator], SensorEntity):
-    _attr_has_entity_name = True
-
+class _Base(BierAlarmEntity, SensorEntity):
     def __init__(self, coordinator: BierAlarmCoordinator, key: str) -> None:
-        super().__init__(coordinator)
-        entry_id = coordinator.config_entry.entry_id
-        self._attr_unique_id = f"{entry_id}_{key}"
+        super().__init__(coordinator, key)
         self._attr_translation_key = key
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry_id)},
-            name="BierAlarm",
-            manufacturer="BierAlarm",
-            entry_type=DeviceEntryType.SERVICE,
-        )
 
 
 class DealCountSensor(_Base):
     _attr_icon = "mdi:beer"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "Aktionen"
+    # The full list is for dashboards only, keep it out of the database.
+    _unrecorded_attributes = frozenset({"deals"})
 
     def __init__(self, coordinator: BierAlarmCoordinator) -> None:
         super().__init__(coordinator, "deals")
@@ -62,6 +55,7 @@ class DealCountSensor(_Base):
             "deals": [
                 {
                     "store": STORE_NAMES.get(d.store, d.store),
+                    "brand": d.brand,
                     "title": d.title,
                     "package": d.package,
                     "price": d.price,
@@ -70,7 +64,9 @@ class DealCountSensor(_Base):
                     "valid_to": d.valid_to,
                     "match": d.id in matches,
                 }
-                for d in data.deals[:15]
+                for d in sorted(
+                    data.deals, key=lambda d: (d.price_per_crate is None, d.price_per_crate or 0)
+                )[:MAX_DEALS_ATTR]
             ],
         }
 
