@@ -88,7 +88,7 @@ actions:
 
 ## Grenzen
 
-- **SPAR und HOFER** sperren automatische Abrufe, deshalb sind sie nicht dabei. Wenn du ein PDF-Flugblatt davon als Link hast, kannst du es unter *Weitere PDF-Flugblatt-Links* eintragen.
+- **SPAR und HOFER** sperren automatische Abrufe, deshalb sind sie nicht dabei. **Lagerhaus** zeigt Preise nur je Genossenschaft über einen internen Suchdienst und ist deshalb auch nicht dabei. Wenn du ein PDF-Flugblatt davon als Link hast, kannst du es unter *Weitere PDF-Flugblatt-Links* eintragen.
 - Die Seiten werden alle 6 Stunden abgefragt. Ändert ein Markt seine Webseite, kann ein Leser ausfallen. Die anderen laufen weiter, und der Fehler steht in der Seitenleiste.
 - Preise sind ohne Gewähr und teils exklusive Pfand. KI-gelesene Angebote sind mit **KI** markiert und sollten im Flugblatt gegengeprüft werden.
 - Inoffiziell, keine Verbindung zu PENNY, Lidl oder BILLA.
