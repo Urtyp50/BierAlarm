@@ -129,6 +129,14 @@ class BierAlarmCard extends HTMLElement {
   .tile.att { box-shadow:inset 0 0 0 1px rgba(239,108,0,.5); }
   .tile.att b { color:#ef6c00; }
   .hide { display:none; }
+  .lbl.tog { cursor:pointer; user-select:none; }
+  .lbl.tog ha-icon { --mdc-icon-size:18px; transition:transform .25s ease; margin-left:2px; }
+  .lbl.tog.open ha-icon { transform:rotate(180deg); }
+  .toggle { display:flex; align-items:center; justify-content:center; gap:4px; width:100%; margin-top:8px; padding:7px;
+            border:1px dashed var(--divider-color); border-radius:12px; background:transparent; cursor:pointer;
+            font:inherit; font-size:.76rem; color:var(--secondary-text-color); }
+  .toggle:hover { color:#e65100; border-color:#e65100; }
+  .none { font-size:.82rem; color:var(--secondary-text-color); padding:2px 0 4px; }
   .grp { display:flex; align-items:flex-start; gap:10px; padding:4px 0; }
   .grp + .grp { border-top:1px dashed var(--divider-color); padding-top:8px; margin-top:4px; }
   .gn { flex:0 0 92px; font-size:.82rem; font-weight:600; color:var(--primary-text-color); padding-top:9px;
@@ -164,8 +172,9 @@ class BierAlarmCard extends HTMLElement {
     <div class="more" id="more"></div>
   </div>
   <div class="sec">
-    <div class="lbl">Benachrichtigen bei<span id="lB"></span></div>
+    <div class="lbl tog" id="tB">Benachrichtigen bei<span id="lB"></span><ha-icon id="cB" icon="mdi:chevron-down"></ha-icon></div>
     <div id="brands"></div>
+    <button class="toggle" id="bB"></button>
   </div>
   <div class="sec hide" id="secD">
     <div class="lbl">Diagnose</div>
@@ -178,8 +187,16 @@ class BierAlarmCard extends HTMLElement {
     this._el = { ic: $("ic"), ici: $("ici"), hn: $("hn"), hs: $("hs"), pill: $("pill"), pt: $("pt"),
       vK: $("vK"), sK: $("sK"), vL: $("vL"), sL: $("sL"), vM: $("vM"), sM: $("sM"),
       q: $("q"), qx: $("qx"), stores: $("stores"), lA: $("lA"), rows: $("rows"), more: $("more"),
-      lB: $("lB"), brands: $("brands"), secD: $("secD"), tDi: $("tDi") };
+      lB: $("lB"), brands: $("brands"), tB: $("tB"), bB: $("bB"), secD: $("secD"), tDi: $("tDi") };
     $("ic").addEventListener("click", () => this._more(C.deals));
+    try { this._open = localStorage.getItem("bieralarm-card-open") === "1"; } catch (e) { this._open = false; }
+    const flip = () => {
+      this._open = !this._open;
+      try { localStorage.setItem("bieralarm-card-open", this._open ? "1" : "0"); } catch (e) { /* private mode */ }
+      this._render();
+    };
+    $("tB").addEventListener("click", flip);
+    $("bB").addEventListener("click", flip);
     $("eK").addEventListener("click", () => this._more(C.best_crate));
     $("eL").addEventListener("click", () => this._more(C.best_liter));
     $("eM").addEventListener("click", () => this._more(C.deals));
@@ -316,17 +333,21 @@ class BierAlarmCard extends HTMLElement {
     const beers = this._beerSwitches();
     const on = beers.filter((b) => b.state === "on").length;
     E.lB.textContent = on ? on + (on === 1 ? " Sorte" : " Sorten") : "nichts gewählt";
+    // Collapsed: only the active types. Open: every type, grouped by brand.
     const groups = [];
-    beers.forEach((b) => {
+    beers.filter((b) => this._open || b.state === "on").forEach((b) => {
       const brand = b.attributes.brand || (b.attributes.beer || "").split(" ")[0] || "?";
       let g = groups.find((x) => x.brand === brand);
       if (!g) { g = { brand, items: [] }; groups.push(g); }
       g.items.push(b);
     });
+    E.tB.classList.toggle("open", !!this._open);
+    E.bB.textContent = this._open ? "Nur aktive zeigen" : "Alle " + beers.length + " Sorten zeigen";
+    E.bB.classList.toggle("hide", !beers.length);
     const gsig = groups.map((g) => g.brand + ":" + g.items.map((b) => b.entity_id).join(",")).join(";");
     if (E.brands._sig !== gsig) {
       E.brands._sig = gsig;
-      E.brands.innerHTML = groups.map((g, i) => `<div class="grp"><div class="gn" data-g="${i}">${this._esc(g.brand)}</div><div class="modes" data-g="${i}"></div></div>`).join("");
+      E.brands.innerHTML = !groups.length ? '<div class="none">Noch keine Sorte aktiv. Aufklappen und Sorten wählen.</div>' : groups.map((g, i) => `<div class="grp"><div class="gn" data-g="${i}">${this._esc(g.brand)}</div><div class="modes" data-g="${i}"></div></div>`).join("");
     }
     groups.forEach((g, i) => {
       const box = E.brands.querySelector(`.modes[data-g="${i}"]`);
