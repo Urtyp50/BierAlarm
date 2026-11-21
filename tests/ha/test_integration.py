@@ -97,6 +97,32 @@ async def test_interspar_pdf_download(hass: HomeAssistant, aioclient_mock) -> No
         assert aioclient_mock.call_count == calls
 
 
+async def test_hofer_catalog(hass: HomeAssistant, aioclient_mock) -> None:
+    from custom_components.bieralarm.sources import hofer
+
+    next_week, this_week = hofer.flipbook_urls(date(2026, 11, 21))
+    pdf_url = "https://view.publitas.com/1/2/pdfs/abc.pdf?x=1"
+    aioclient_mock.get(next_week, text=f'<a href="{pdf_url}">PDF</a>')
+    aioclient_mock.get(f"{next_week}spreads.json", text=(FIXTURES / "hofer_spreads.json").read_text(encoding="utf-8"))
+    aioclient_mock.get(pdf_url, content=(FIXTURES / "hofer_kw48_bier.pdf").read_bytes())
+    aioclient_mock.get(this_week, text="<html>no beer</html>")
+    aioclient_mock.get(f"{this_week}spreads.json", text='[{"pages": [{"number": 1, "text": "KARTOFFELN"}]}]')
+    options = {**OPTIONS, "stores": ["hofer"], "favorite_brands": "Gösser Märzen"}
+    entry = MockConfigEntry(domain=DOMAIN, title="BierAlarm", data={}, options=options)
+    entry.add_to_hass(hass)
+    with patch.object(hofer, "flipbook_urls", return_value=[next_week, this_week]):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        data = entry.runtime_data.data
+        assert not data.errors
+        crate = next(d for d in data.deals if d.price == 13.8)
+        assert (crate.store, crate.title, crate.url) == ("hofer", "Gösser Märzen", next_week)
+        assert crate.id in data.matches
+        calls = aioclient_mock.call_count
+        await entry.runtime_data.async_refresh()  # both catalogs are cached
+        assert aioclient_mock.call_count == calls
+
+
 @pytest.fixture(autouse=True)
 def _fixture_week():
     # Fixtures are from KW 47/2026 and expired deals are dropped, so pin "today".

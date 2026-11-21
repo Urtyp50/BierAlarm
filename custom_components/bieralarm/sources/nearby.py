@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from math import asin, cos, radians, sin, sqrt
 
-from ..const import STORE_BILLA, STORE_BILLA_PLUS, STORE_INTERSPAR, STORE_LIDL, STORE_MPREIS, STORE_PENNY
+from ..const import STORE_BILLA, STORE_BILLA_PLUS, STORE_HOFER, STORE_INTERSPAR, STORE_LIDL, STORE_MPREIS, STORE_PENNY
 
 URL = "https://overpass-api.de/api/interpreter"
 # Public mirror, used when the main server is busy (502/504).
@@ -24,6 +24,7 @@ WIKIDATA = {
     STORE_BILLA: "Q537781",
     STORE_BILLA_PLUS: "Q115431077",
     STORE_INTERSPAR: "Q15820339",
+    STORE_HOFER: "Q15815751",
 }
 _KM_PER_DEG_LAT = 111.32
 _MARGIN_KM = 2.0  # rounding the home position moves it by up to ~0.8 km

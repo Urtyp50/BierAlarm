@@ -207,3 +207,27 @@ def test_interspar_urls():
         "https://flugblatt.interspar.at/oberoesterreich/oberoesterreich_kw46/",
     ]
     assert interspar.region_slug("Burgenland") == "wien"
+
+
+def test_hofer_catalog():
+    import json
+    from datetime import date
+
+    from custom_components.bieralarm.sources import hofer
+
+    assert hofer.flipbook_urls(date(2026, 11, 21)) == [
+        "https://katalog.hofer.at/flipbook_kw48_26_0/",
+        "https://katalog.hofer.at/flipbook_kw47_26_0/",
+    ]
+    pages = hofer.beer_pages(json.loads((FIXTURES / "hofer_spreads.json").read_text(encoding="utf-8")))
+    assert pages == [0, 1, 2]
+    deals = {(d.title, d.price): d for d in hofer.parse((FIXTURES / "hofer_kw48_bier.pdf").read_bytes(), "x", 2026, pages)}
+    crate = deals[("Gösser Märzen", 13.8)]
+    assert (crate.regular_price, crate.volume_l, crate.valid_to) == (29.8, 10.0, "2026-11-21")
+    naturgold = deals[("Gösser Naturgold Alkoholfrei", 0.74)]
+    assert (naturgold.volume_l, naturgold.regular_price, naturgold.condition) == (0.5, 1.49, "6+6 Bei 12 flaschen je")
+    assert deals[("Egger Märzen", 0.79)].regular_price == 1.19
+    assert deals[("Gösser Märzen/Naturradler", 0.64)].valid_from == "2026-11-23"
+    assert len(deals) == 5
+    html = '<a href="https://view.publitas.com/1/2/pdfs/abc.pdf?response-content-disposition=attachment">'
+    assert hofer.find_pdf(html).endswith("abc.pdf?response-content-disposition=attachment")

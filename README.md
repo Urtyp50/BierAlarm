@@ -13,6 +13,7 @@ Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreic
 | MPREIS | Seite „Bier in Aktion“ auf mpreis.at | Nein |
 | BILLA / BILLA PLUS | PDF-Flugblatt von billa.at, gelesen über die Anordnung auf der Seite | Nein |
 | INTERSPAR | PDF-Download des Regional-Flugblatts auf flugblatt.interspar.at | Nein |
+| HOFER | PDF-Download des Katalogs auf katalog.hofer.at (diese und nächste Woche). Das PDF (ca. 45 MB) wird nur geladen, wenn laut Seitentext Bier drin ist, und dann einmal pro Woche. | Nein |
 | Eigene Flugblätter | Beliebige PDF-Links | Nur wenn die Anordnung nicht erkannt wird |
 
 - **Preis pro 20er-Kiste**: Jede Aktion wird auf 20 × 0,5 l (10 Liter) umgerechnet, damit Dosen, Träger und Kisten vergleichbar sind (ohne Pfand)
@@ -89,10 +90,10 @@ actions:
 
 ## Grenzen
 
-- **HOFER** und die Seiten von **SPAR** sperren automatische Abrufe. INTERSPAR ist über das frei abrufbare Flugblatt dabei, SPAR/EUROSPAR-Märkte nicht. **Lagerhaus** zeigt Preise nur je Genossenschaft über einen internen Suchdienst und ist deshalb auch nicht dabei. Wenn du ein PDF-Flugblatt davon als Link hast, kannst du es unter *Weitere PDF-Flugblatt-Links* eintragen.
+- Die Seiten von **SPAR** und **hofer.at** sperren automatische Abrufe. INTERSPAR und HOFER sind über ihre frei abrufbaren Flugblätter dabei, SPAR/EUROSPAR-Märkte nicht. HOFER-Wochenendaktionen gelten oft nur an den angegebenen Tagen (z. B. Fr. und Sa.). **Lagerhaus** zeigt Preise nur je Genossenschaft über einen internen Suchdienst und ist deshalb auch nicht dabei. Wenn du ein PDF-Flugblatt davon als Link hast, kannst du es unter *Weitere PDF-Flugblatt-Links* eintragen.
 - Die Seiten werden alle 6 Stunden abgefragt. Ändert ein Markt seine Webseite, kann ein Leser ausfallen. Die anderen laufen weiter, und der Fehler steht in der Seitenleiste.
 - Preise sind ohne Gewähr und teils exklusive Pfand. KI-gelesene Angebote sind mit **KI** markiert und sollten im Flugblatt gegengeprüft werden.
-- Inoffiziell, keine Verbindung zu PENNY, Lidl, MPREIS, BILLA oder INTERSPAR.
+- Inoffiziell, keine Verbindung zu PENNY, Lidl, MPREIS, BILLA, INTERSPAR oder HOFER.
 
 ## Entwicklung
 

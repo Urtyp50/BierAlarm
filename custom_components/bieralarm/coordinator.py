@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from dataclasses import dataclass, field
 from datetime import datetime
 import logging
@@ -38,6 +39,7 @@ from .const import (
     REQUEST_TIMEOUT,
     STORAGE_KEY,
     STORAGE_VERSION,
+    STORE_HOFER,
     STORE_INTERSPAR,
     STORE_LIDL,
     STORE_MPREIS,
@@ -47,7 +49,7 @@ from .const import (
     USER_AGENT,
 )
 from .models import Deal, matches_brand
-from .sources import billa, interspar, leaflet, lidl, mpreis, nearby, pdf_layout, penny
+from .sources import billa, hofer, interspar, leaflet, lidl, mpreis, nearby, pdf_layout, penny
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -191,6 +193,8 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
             jobs["billa"] = self._fetch_billa()
         if STORE_INTERSPAR in stores:
             jobs[STORE_INTERSPAR] = self._fetch_interspar()
+        if STORE_HOFER in stores:
+            jobs[STORE_HOFER] = self._fetch_hofer()
         if self._extra_leaflets():
             jobs[STORE_CUSTOM] = self._fetch_extra()
 
@@ -287,7 +291,7 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
         return result
 
     async def _get(self, url: str, *, binary: bool = False) -> str | bytes:
-        timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT * (4 if binary else 1))
+        timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT * (8 if binary else 1))
         headers = {
             "User-Agent": USER_AGENT,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -349,6 +353,46 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
             if resp.status not in (301, 302, 303, 307) or not location:
                 raise UpdateFailed(f"INTERSPAR: PDF-Download nicht verfügbar ({resp.status})")
         return await self._get(location, binary=True)
+
+    async def _fetch_hofer(self) -> list[Deal]:
+        """Next week's and this week's catalog; each is read once and kept in the cache."""
+        deals: dict[str, Deal] = {}
+        found = False
+        for flipbook in hofer.flipbook_urls(dt_util.now().date()):
+            cached = self._cache["leaflets"].get(flipbook)
+            if cached is not None and cached.get("parser") == hofer.VERSION:
+                found = True
+                read = [Deal(**d) for d in cached["deals"]]
+            else:
+                try:
+                    html = await self._get(flipbook)
+                except aiohttp.ClientResponseError as err:
+                    if err.status == 404:
+                        continue  # not online yet
+                    raise
+                found = True
+                read = await self._read_hofer(flipbook, html)
+                self._cache["leaflets"][flipbook] = {
+                    "fetched": dt_util.utcnow().isoformat(),
+                    "parser": hofer.VERSION,
+                    "deals": [_deal_fields(d) for d in read],
+                }
+            for deal in read:
+                deals.setdefault(deal.id, deal)
+        if not found:
+            raise UpdateFailed("HOFER: kein Katalog auf katalog.hofer.at gefunden")
+        return list(deals.values())
+
+    async def _read_hofer(self, flipbook: str, html: str) -> list[Deal]:
+        pages = hofer.beer_pages(json.loads(await self._get(f"{flipbook}spreads.json")))
+        if not pages:
+            return []  # no beer this week: the PDF (about 45 MB) is not downloaded
+        pdf_url = hofer.find_pdf(html)
+        if not pdf_url:
+            raise UpdateFailed("HOFER: PDF-Link im Katalog nicht gefunden")
+        pdf = await self._get(pdf_url, binary=True)
+        year = dt_util.now().year
+        return await self.hass.async_add_executor_job(hofer.parse, pdf, flipbook, year, pages)
 
     def _extra_leaflets(self) -> list[str]:
         raw = self.opts.get(CONF_EXTRA_LEAFLETS) or ""
