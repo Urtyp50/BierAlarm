@@ -374,7 +374,7 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
             self.hass.bus.async_fire(EVENT_NEW_DEAL, deal.as_dict())
         notified.extend(d.id for d in new)
 
-        lines = [_line(d) for d in new[:10]]
+        lines = [_line(d, self.is_favorite(d)) for d in new[:10]]
         if len(new) > 10:
             lines.append(f"… und {len(new) - 10} weitere")
         message = "\n".join(lines)
@@ -421,7 +421,7 @@ def _deal_fields(deal: Deal) -> dict:
     return data
 
 
-def _line(deal: Deal) -> str:
+def _line(deal: Deal, favorite: bool = True) -> str:
     price = f"€ {deal.price:.2f}".replace(".", ",") if deal.price is not None else "?"
     per_l = (
         f" (20er-Kiste € {deal.price_per_crate:.2f})".replace(".", ",")
@@ -432,4 +432,5 @@ def _line(deal: Deal) -> str:
     extra = f" – {deal.condition}" if deal.condition else ""
     alcohol = deal.as_dict()["alcohol"]
     alc = f" · {alcohol:.1f} % vol".replace(".", ",") if alcohol else ""
-    return f"• {store}: {deal.title} {deal.package or ''}{alc} {price}{per_l}{extra}".replace("  ", " ")
+    why = "" if favorite else " (Preis-Alarm)"
+    return f"• {store}: {deal.title} {deal.package or ''}{alc} {price}{per_l}{extra}{why}".replace("  ", " ")
