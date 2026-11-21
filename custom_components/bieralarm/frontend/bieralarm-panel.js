@@ -285,6 +285,7 @@ const STYLE = `
   .store { background:var(--secondary-background-color); }
   .s-penny { background:#cd1414; color:#fff; } .s-lidl { background:#0050aa; color:#fff; }
   .s-billa, .s-billa_plus { background:#fed500; color:#222; }
+  .s-interspar { background:#c8102e; color:#fff; }
   .s-mpreis { background:#e2001a; color:#fff; }
   .alarm { background:var(--warning-color,#ffa600); color:#222; }
   .ai { background:var(--secondary-background-color); color:var(--secondary-text-color); }

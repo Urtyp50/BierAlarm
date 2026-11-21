@@ -14,7 +14,7 @@
         "data": {
           "stores": "Stores",
           "lidl_region": "Lidl region",
-          "billa_region": "BILLA region",
+          "billa_region": "Region (BILLA, INTERSPAR)",
           "ai_task_entity": "AI Task entity (optional)",
           "favorite_brands": "Favourite brands (comma separated)",
           "max_price_per_liter": "Alarm below price per liter (×10 = price per 20 crate)",
@@ -42,7 +42,7 @@
         "data": {
           "stores": "Stores",
           "lidl_region": "Lidl region",
-          "billa_region": "BILLA region",
+          "billa_region": "Region (BILLA, INTERSPAR)",
           "ai_task_entity": "AI Task entity (optional)",
           "favorite_brands": "Favourite brands (comma separated)",
           "max_price_per_liter": "Alarm below price per liter (×10 = price per 20 crate)",

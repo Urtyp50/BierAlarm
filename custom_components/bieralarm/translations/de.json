@@ -14,7 +14,7 @@
         "data": {
           "stores": "Märkte",
           "lidl_region": "Lidl-Region",
-          "billa_region": "BILLA-Region",
+          "billa_region": "Region (BILLA, INTERSPAR)",
           "ai_task_entity": "KI-Aufgabe (optional)",
           "favorite_brands": "Lieblingsmarken (mit Komma getrennt)",
           "max_price_per_liter": "Alarm unter Literpreis (×10 = Preis pro 20er-Kiste)",
@@ -42,7 +42,7 @@
         "data": {
           "stores": "Märkte",
           "lidl_region": "Lidl-Region",
-          "billa_region": "BILLA-Region",
+          "billa_region": "Region (BILLA, INTERSPAR)",
           "ai_task_entity": "KI-Aufgabe (optional)",
           "favorite_brands": "Lieblingsmarken (mit Komma getrennt)",
           "max_price_per_liter": "Alarm unter Literpreis (×10 = Preis pro 20er-Kiste)",

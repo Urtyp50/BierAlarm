@@ -1,5 +1,6 @@
 """Integration test inside a real Home Assistant core (pytest-homeassistant-custom-component)."""
 
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
@@ -70,6 +71,30 @@ async def test_billa_pdf_read_without_ai(hass: HomeAssistant, aioclient_mock) ->
     calls = aioclient_mock.call_count
     await entry.runtime_data.async_refresh()  # the PDFs are cached per URL
     assert aioclient_mock.call_count == calls + 1  # only the leaflet overview page
+
+
+async def test_interspar_pdf_download(hass: HomeAssistant, aioclient_mock) -> None:
+    from custom_components.bieralarm.sources import interspar
+
+    flipbooks = interspar.flipbook_urls("Oberösterreich", date(2026, 11, 20))
+    pdf_url = "https://cdn.ipaper.io/x/Download.pdf?token=t"
+    aioclient_mock.get(flipbooks[0], text="<html></html>")
+    aioclient_mock.post(interspar.pdf_endpoint(flipbooks[0]), status=302, headers={"Location": pdf_url})
+    aioclient_mock.get(pdf_url, content=(FIXTURES / "interspar_kw47_bier.pdf").read_bytes())
+    options = {**OPTIONS, "stores": ["interspar"], "billa_region": "Oberösterreich", "favorite_brands": "Zipfer Urtyp"}
+    entry = MockConfigEntry(domain=DOMAIN, title="BierAlarm", data={}, options=options)
+    entry.add_to_hass(hass)
+    with patch.object(interspar, "flipbook_urls", return_value=flipbooks):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        data = entry.runtime_data.data
+        assert not data.errors
+        urtyp = next(d for d in data.deals if d.title == "Zipfer Urtyp")
+        assert (urtyp.store, urtyp.price, urtyp.url) == ("interspar", 14.3, flipbooks[0])
+        assert urtyp.id in data.matches
+        calls = aioclient_mock.call_count
+        await entry.runtime_data.async_refresh()  # cached per flip book, nothing downloaded again
+        assert aioclient_mock.call_count == calls
 
 
 @pytest.fixture(autouse=True)

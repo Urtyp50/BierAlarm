@@ -21,6 +21,7 @@ STORE_LIDL = "lidl"
 STORE_BILLA = "billa"
 STORE_BILLA_PLUS = "billa_plus"
 STORE_MPREIS = "mpreis"
+STORE_INTERSPAR = "interspar"
 
 STORE_NAMES = {
     STORE_PENNY: "PENNY",
@@ -28,6 +29,7 @@ STORE_NAMES = {
     STORE_MPREIS: "MPREIS",
     STORE_BILLA: "BILLA",
     STORE_BILLA_PLUS: "BILLA PLUS",
+    STORE_INTERSPAR: "INTERSPAR",
 }
 
 # Stores that need the AI Task entity because their leaflet only exists as PDF.

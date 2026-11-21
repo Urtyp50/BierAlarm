@@ -136,11 +136,11 @@ def parse_volume(text: str | None) -> float | None:
     if not text:
         return None
     t = text.lower().replace("\xa0", " ")
-    multi = re.search(_NUM + r"\s*[x×]\s*" + _NUM + r"\s*(ml|cl|l(?:iter)?)\b", t)
+    multi = re.search(_NUM + r"\s*[x×]\s*" + _NUM + r"\s*-?\s*(ml|cl|l(?:iter)?)\b", t)
     if multi:
         count, size, unit = _f(multi.group(1)), _f(multi.group(2)), multi.group(3)
         return round(count * _to_liter(size, unit), 3)
-    single = re.search(_NUM + r"\s*(ml|cl|l(?:iter)?)\b", t)
+    single = re.search(_NUM + r"\s*-?\s*(ml|cl|l(?:iter)?)\b", t)
     if single:
         liters = _to_liter(_f(single.group(1)), single.group(2))
         crate = re.search(r"kiste\s*=\s*(\d+)", t)
@@ -160,9 +160,11 @@ def _to_liter(value: float, unit: str) -> float:
 
 def looks_like_beer(*texts: str | None) -> bool:
     blob = " ".join(t for t in texts if t).lower()
-    if "alkoholfrei" in blob and "bier" not in blob:
-        return False
-    if re.search(r"brot|mehl|backofen|waschmittel|chips|gebäck|semmel|käse|senf|essig|wurst|gulasch", blob):
+    if re.search(
+        r"brot|mehl|backofen|waschmittel|chips|gebäck|semmel|käse|senf|essig|wurst|gulasch|ciabatta"
+        r"|gebacken|lagernd|lagerung|kaiserschmarr|kaisersemmel",
+        blob,
+    ):
         return False
     return any(re.search(rf"\b{re.escape(w)}", blob) for w in BEER_WORDS)
 

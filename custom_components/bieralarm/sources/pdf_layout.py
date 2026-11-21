@@ -1,9 +1,12 @@
-"""Read beer offers from a BILLA / BILLA PLUS PDF leaflet without AI.
+"""Read beer offers from a PDF leaflet (BILLA, BILLA PLUS, INTERSPAR) without AI.
 
-Each offer is a tile: the big price ('1380' = € 13,80) sits at the bottom left,
-name and package text above it on the right, conditions ('6+6', 'BEI 12 DOSEN JE',
-'1 DOSE € 1.39') around it. The text comes with page positions, so every small
-text is given to the nearest big price below it.
+Each offer is a tile with a big price ('1380' or '13,80' = € 13,80, '14,-' = € 14):
+- BILLA: price at the bottom left, name and package above it on the right,
+  conditions ('6+6', 'BEI 12 DOSEN JE', '1 DOSE € 1.39') around it.
+- INTERSPAR: name on the left, regular price ('28,-') and offer price ('14,-')
+  in the same row to the right.
+The text comes with page positions, so every beer name is given to the price
+that sits below it or right of it.
 """
 
 from __future__ import annotations
@@ -16,14 +19,16 @@ import re
 
 from ..models import Deal, looks_like_beer, parse_volume
 
-VERSION = "layout-1"  # bump when the reader changes, so cached leaflets are read again
+VERSION = "layout-3"  # bump when the reader changes, so cached leaflets are read again
 PRICE_MIN_SIZE = 25.0  # font size of the big tile prices
-TEXT_MAX_SIZE = 10.0
+TEXT_MAX_SIZE = 12.5
 MAX_ABOVE = 190  # how far (pt) the name may sit above its price
 
-_PRICE = re.compile(r"^\d{2,4}$")
-_REGULAR = re.compile(r"(?:1\s*(?:DOSE|FL\.?|FLASCHE|STK\.?|PKG\.?|KISTE|TRÄGER)\s*€|statt)\s*(\d+[.,]\d{2})", re.I)
-_DEAL_WORDS = re.compile(r"^(?:BEI|AB|JE|AKTION|STATT|NUR)\b", re.I)
+_PRICE = re.compile(r"^(?:\d{2,4}|\d{1,3},(?:-|\d{2}))$")  # '1380', '13,80', '14,-'
+PAIR_DX, PAIR_DY = 100, 25  # regular and offer price side by side (INTERSPAR)
+_REGULAR = re.compile(r"(?:1\s*(?:DOSE|FL\.?|FLASCHE|STK\.?|PKG\.?|KISTE|TRÄGER)\s*€?|statt)\s*(\d+[.,]\d{2})", re.I)
+MAX_NAME_CHARS = 60  # longer lines are descriptions or fine print, not product names
+_DEAL_WORDS = re.compile(r"^(?:BEI|AB|JE|AKTION|STATT|NUR|MIT|VON)\b|%-AKTION", re.I)
 _BADGE = re.compile(r"^[A-ZÄÖÜ ]{3,}$")  # 'KURZE ZEIT', 'NUR' ...
 _PERCENT = re.compile(r"^-\s?\d{1,2}\s?%$")
 _MULTI = re.compile(r"^\d{1,2}\s?\+\s?\d{1,2}$")
@@ -71,16 +76,23 @@ def _validity(texts: list[str], year: int) -> tuple[str | None, str | None]:
     return start.isoformat(), end.isoformat()
 
 
+def _texts(frags: list[_Frag]) -> list[str]:
+    """Each line plus each line joined with the next ('von Do, 19.11. bis' + 'Mi, 25.11.')."""
+    return [f.text for f in frags] + [f"{a.text} {b.text}" for a, b in zip(frags, frags[1:])]
+
+
 def parse(pdf_bytes: bytes, store: str, url: str, year: int) -> list[Deal]:
     from pypdf import PdfReader  # noqa: PLC0415 - heavy import, only when needed
 
     reader = PdfReader(io.BytesIO(pdf_bytes))
     pages = [_fragments(p) for p in reader.pages]
-    valid_from, valid_to = _validity([f.text for frags in pages for f in frags], year)
+    valid_from, valid_to = _validity([t for frags in pages for t in _texts(frags)], year)
     deals: dict[str, Deal] = {}
     for frags in pages:
+        page_from, page_to = _validity(_texts(frags), year)
         for deal in _page_deals(frags, store, url):
-            deal.valid_from, deal.valid_to = valid_from, valid_to
+            deal.valid_from = page_from or valid_from
+            deal.valid_to = page_to or valid_to
             deals[deal.id] = deal
     return list(deals.values())
 
@@ -96,7 +108,7 @@ def _page_deals(frags: list[_Frag], store: str, url: str) -> list[Deal]:
     deals: list[Deal] = []
     used: set[int] = set()
     for seed in names:
-        if id(seed) in used or not looks_like_beer(seed.text):
+        if id(seed) in used or len(seed.text) > MAX_NAME_CHARS or not looks_like_beer(seed.text):
             continue
         block = _name_block(seed, names)
         used.update(id(f) for f in block)
@@ -105,11 +117,20 @@ def _page_deals(frags: list[_Frag], store: str, url: str) -> list[Deal]:
         price = _closest_price(prices, left, bottom)
         if price is None:
             continue
+        # INTERSPAR prints the regular price right next to the offer price
+        twin = next(
+            (p for p in prices if p is not price and abs(p.x - price.x) <= PAIR_DX and abs(p.y - price.y) <= PAIR_DY),
+            None,
+        )
+        if twin and _value(twin) < _value(price):
+            price, twin = twin, price
         package: list[_Frag] = []
         column = list(block)
+        # BILLA: the package ends at the price below; INTERSPAR: it may run below the price row
+        lowest = price.y - 3 if bottom - price.y > 40 else bottom - 45
         for f in sorted(names, key=lambda f: -f.y):  # top to bottom, each line must join the column
             if (
-                f.size < seed.size - 0.3 and price.y - 3 <= f.y < bottom and bottom - f.y <= 45
+                f.size < seed.size - 0.3 and lowest <= f.y < bottom and bottom - f.y <= 45
                 and any(abs(f.y - c.y) <= 20 and _aligned(f, c) for c in column)
             ):
                 package.append(f)
@@ -120,6 +141,8 @@ def _page_deals(frags: list[_Frag], store: str, url: str) -> list[Deal]:
             and 0 < f.y - price.y <= 150 and -15 <= f.x - price.x <= 45
         ]
         deal = _build(price, block, package, deal_texts, notes, store, url)
+        if deal and twin and _value(twin) > deal.price:
+            deal.regular_price = _value(twin)
         if deal:
             deals.append(deal)
     return deals
@@ -150,12 +173,22 @@ def _aligned(a: _Frag, b: _Frag) -> bool:
     )
 
 
+def _value(price: _Frag) -> float:
+    text = price.text.replace(",-", ",00")
+    return int(text) / 100 if "," not in text else float(text.replace(",", "."))
+
+
 def _closest_price(prices: list[_Frag], x: float, y: float) -> _Frag | None:
+    """Below the name (BILLA) or in the same row to the right (INTERSPAR)."""
     best = None
     for p in prices:
-        dy, dx = y - p.y, abs(x - p.x)
-        if -5 <= dy <= MAX_ABOVE and dx <= 130:
-            cost = dy + 2 * dx
+        dy, dx = y - p.y, p.x - x
+        costs = []
+        if -5 <= dy <= MAX_ABOVE and abs(dx) <= 130:
+            costs.append(dy + 2 * abs(dx))
+        if abs(dy) <= 40 and 0 < dx <= 260:
+            costs.append(abs(dy) + 0.6 * dx)
+        for cost in costs:
             if best is None or cost < best[0]:
                 best = (cost, p)
     return best[1] if best else None
@@ -181,7 +214,7 @@ def _build(price, block, package, deal_texts, notes, store, url) -> Deal | None:
             regular = float(m.group(1).replace(",", "."))
         else:
             conditions.append(f.text)
-    value = int(price.text) / 100
+    value = _value(price)
     volume = parse_volume(package_text)
     if volume and volume < 2 and value > 5 and "kiste" in (package_text or "").lower():
         volume = parse_volume(re.sub(r"\(.*?\)", "", package_text))
@@ -208,7 +241,12 @@ def _is_deal_text(text: str) -> bool:
 def _order(conditions: list[str]) -> list[str]:
     """'6+6' / '-39 %' first, then 'BEI 12 DOSEN JE'."""
     head = [c for c in conditions if _MULTI.match(c) or _PERCENT.match(c)]
-    rest = [c for c in conditions if c not in head and _DEAL_WORDS.match(c) and c.upper() not in ("AKTION", "NUR")]
+    if any("%-aktion" in c.lower() for c in conditions):
+        head.append("Aktion")
+    rest = [
+        c for c in conditions
+        if c not in head and re.match(r"^(?:BEI|AB|JE)\b", c, re.I)
+    ]
     return [c.replace(" ", "") if _MULTI.match(c) else c for c in head] + [c.capitalize() for c in rest]
 
 

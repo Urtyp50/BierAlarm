@@ -1,7 +1,7 @@
 /* bieralarm-card — Bieraktionen pro 20er-Kiste, Filter und Marken-Alarm, im Stil der dimplex-heatpump-card */
 const BA_STORE = {
   "PENNY": "#c62828", "Lidl": "#0050aa", "MPREIS": "#6d4c41",
-  "BILLA": "#f9a825", "BILLA PLUS": "#e65100", "Eigenes Flugblatt": "#546e7a"
+  "BILLA": "#f9a825", "BILLA PLUS": "#e65100", "INTERSPAR": "#c8102e", "Eigenes Flugblatt": "#546e7a"
 };
 const BA_ALL = "Alle";
 // Logos are loaded from each store's own website; if one fails, the coloured text badge is shown.

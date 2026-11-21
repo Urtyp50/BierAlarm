@@ -12,6 +12,7 @@ Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreic
 | Lidl | Bieraktion-Kategorie auf lidl.at, je Region (Ost/West/Süd) | Nein |
 | MPREIS | Seite „Bier in Aktion“ auf mpreis.at | Nein |
 | BILLA / BILLA PLUS | PDF-Flugblatt von billa.at, gelesen über die Anordnung auf der Seite | Nein |
+| INTERSPAR | PDF-Download des Regional-Flugblatts auf flugblatt.interspar.at | Nein |
 | Eigene Flugblätter | Beliebige PDF-Links | Nur wenn die Anordnung nicht erkannt wird |
 
 - **Preis pro 20er-Kiste**: Jede Aktion wird auf 20 × 0,5 l (10 Liter) umgerechnet, damit Dosen, Träger und Kisten vergleichbar sind (ohne Pfand)
@@ -29,7 +30,7 @@ Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreic
 ### So werden PDF-Flugblätter gelesen
 
 1. BierAlarm lädt das PDF und liest Text samt Position auf der Seite, ganz ohne KI.
-2. Jeder Biername wird dem großen Preis darunter zugeordnet, dazu Packung, Aktion („6+6“, „-39 %“) und Normalpreis. Gültig-von/bis kommt aus dem Kopf des Flugblatts.
+2. Jeder Biername wird dem großen Preis darunter zugeordnet, dazu Packung, Aktion („6+6“, „-39 %“) und Normalpreis. Gültig-von/bis kommt von der Seite („von Do, 19.11. bis Mi, 25.11.“), sonst aus dem Kopf des Flugblatts.
 3. Nur wenn so kein Bier gefunden wird und eine **KI-Aufgabe** (`ai_task`) eingestellt ist, liest die KI die Bier-Seiten.
 4. Das Ergebnis wird pro Flugblatt gespeichert, das PDF wird also nur einmal pro Woche geladen.
 
@@ -61,7 +62,7 @@ Sie zeigt den besten Kistenpreis, eine kleine Karte mit den Filialen im Umkreis 
 |---|---|
 | Märkte | Welche Märkte durchsucht werden |
 | Lidl-Region | Ost (Wien/NÖ/Bgld), West (OÖ/Sbg/T/Vbg) oder Süd (Stmk/Ktn) |
-| BILLA-Region | Bevorzugtes Regional-Flugblatt |
+| Region (BILLA, INTERSPAR) | Bevorzugtes Regional-Flugblatt (Burgenland bekommt bei INTERSPAR das Wiener Flugblatt) |
 | KI-Aufgabe | Optional, nur als Reserve für ungewöhnliche PDF-Flugblätter |
 | Umkreis | z. B. `7` km um dein Zuhause, `0` = alle Märkte |
 | Lieblingsmarken | z. B. `Gösser, Stiegl, Ottakringer` |
@@ -88,10 +89,10 @@ actions:
 
 ## Grenzen
 
-- **SPAR und HOFER** sperren automatische Abrufe, deshalb sind sie nicht dabei. **Lagerhaus** zeigt Preise nur je Genossenschaft über einen internen Suchdienst und ist deshalb auch nicht dabei. Wenn du ein PDF-Flugblatt davon als Link hast, kannst du es unter *Weitere PDF-Flugblatt-Links* eintragen.
+- **HOFER** und die Seiten von **SPAR** sperren automatische Abrufe. INTERSPAR ist über das frei abrufbare Flugblatt dabei, SPAR/EUROSPAR-Märkte nicht. **Lagerhaus** zeigt Preise nur je Genossenschaft über einen internen Suchdienst und ist deshalb auch nicht dabei. Wenn du ein PDF-Flugblatt davon als Link hast, kannst du es unter *Weitere PDF-Flugblatt-Links* eintragen.
 - Die Seiten werden alle 6 Stunden abgefragt. Ändert ein Markt seine Webseite, kann ein Leser ausfallen. Die anderen laufen weiter, und der Fehler steht in der Seitenleiste.
 - Preise sind ohne Gewähr und teils exklusive Pfand. KI-gelesene Angebote sind mit **KI** markiert und sollten im Flugblatt gegengeprüft werden.
-- Inoffiziell, keine Verbindung zu PENNY, Lidl oder BILLA.
+- Inoffiziell, keine Verbindung zu PENNY, Lidl, MPREIS, BILLA oder INTERSPAR.
 
 ## Entwicklung
 

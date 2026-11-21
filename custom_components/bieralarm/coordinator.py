@@ -38,6 +38,7 @@ from .const import (
     REQUEST_TIMEOUT,
     STORAGE_KEY,
     STORAGE_VERSION,
+    STORE_INTERSPAR,
     STORE_LIDL,
     STORE_MPREIS,
     STORE_NAMES,
@@ -46,7 +47,7 @@ from .const import (
     USER_AGENT,
 )
 from .models import Deal, matches_brand
-from .sources import billa, leaflet, lidl, mpreis, nearby, pdf_layout, penny
+from .sources import billa, interspar, leaflet, lidl, mpreis, nearby, pdf_layout, penny
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -188,6 +189,8 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
             jobs[STORE_MPREIS] = self._fetch_mpreis()
         if any(s in stores for s in AI_STORES):
             jobs["billa"] = self._fetch_billa()
+        if STORE_INTERSPAR in stores:
+            jobs[STORE_INTERSPAR] = self._fetch_interspar()
         if self._extra_leaflets():
             jobs[STORE_CUSTOM] = self._fetch_extra()
 
@@ -317,6 +320,36 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
             deals.extend(await self._analyse_pdf(store, STORE_NAMES[store], url))
         return deals
 
+    async def _fetch_interspar(self) -> list[Deal]:
+        region = self.opts.get(CONF_BILLA_REGION, DEFAULT_BILLA_REGION)
+        for flipbook in interspar.flipbook_urls(region, dt_util.now().date()):
+            if flipbook in self._cache["leaflets"]:
+                return await self._analyse_pdf(STORE_INTERSPAR, "INTERSPAR", flipbook)
+            try:
+                await self._get(flipbook)
+            except aiohttp.ClientResponseError as err:
+                if err.status == 404:
+                    continue  # this week's leaflet is not online yet
+                raise
+            return await self._analyse_pdf(
+                STORE_INTERSPAR, "INTERSPAR", flipbook, download=self._interspar_pdf
+            )
+        raise UpdateFailed("INTERSPAR: kein Flugblatt auf flugblatt.interspar.at gefunden")
+
+    async def _interspar_pdf(self, flipbook: str) -> bytes:
+        """POST GetPDF.ashx answers with a redirect to the PDF (a POST must not follow it)."""
+        async with self._session.post(
+            interspar.pdf_endpoint(flipbook),
+            data={"pageNumbers": ""},
+            headers={"User-Agent": USER_AGENT, "Referer": flipbook},
+            allow_redirects=False,
+            timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT),
+        ) as resp:
+            location = resp.headers.get("Location")
+            if resp.status not in (301, 302, 303, 307) or not location:
+                raise UpdateFailed(f"INTERSPAR: PDF-Download nicht verfügbar ({resp.status})")
+        return await self._get(location, binary=True)
+
     def _extra_leaflets(self) -> list[str]:
         raw = self.opts.get(CONF_EXTRA_LEAFLETS) or ""
         return [u.strip() for u in raw.replace("\n", ",").split(",") if u.strip().startswith("http")]
@@ -328,7 +361,9 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
             deals.extend(await self._analyse_pdf(STORE_CUSTOM, label, url))
         return deals
 
-    async def _analyse_pdf(self, store: str, store_name: str, url: str) -> list[Deal]:
+    async def _analyse_pdf(
+        self, store: str, store_name: str, url: str, download: Any = None
+    ) -> list[Deal]:
         """Read a PDF leaflet: first from the page layout (no AI), the AI only as a fallback.
 
         The result is cached per PDF URL, so each leaflet is read once per week.
@@ -336,7 +371,7 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
         cached = self._cache["leaflets"].get(url)
         if cached is not None and cached.get("parser") in (pdf_layout.VERSION, "ai"):
             return [Deal(**d) for d in cached["deals"]]
-        pdf = await self._get(url, binary=True)
+        pdf = await download(url) if download else await self._get(url, binary=True)
         year = dt_util.now().year
         deals = await self.hass.async_add_executor_job(pdf_layout.parse, pdf, store, url, year)
         parser = pdf_layout.VERSION

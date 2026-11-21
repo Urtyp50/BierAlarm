@@ -175,7 +175,7 @@ def test_billa_pdf_layout():
     if not path.exists():
         pytest.skip("fixture missing")
     deals = {(d.title, d.price): d for d in pdf_layout.parse(path.read_bytes(), "billa", "x", 2026)}
-    assert len(deals) == 8
+    assert len(deals) == 9
     assert deals[("Wieselburger Gold", 14.8)].volume_l == 10.0
     assert "nördlichen Burgenland" in deals[("Wieselburger Gold", 14.8)].condition
     otta = deals[("Ottakringer Helles", 0.69)]
@@ -185,3 +185,25 @@ def test_billa_pdf_layout():
     plus = {d.title for d in pdf_layout.parse((FIXTURES / "billa_plus_kw47_bier.pdf").read_bytes(), "billa_plus", "x", 2026)}
     assert {"Pilsner Urquell", "Heineken Lager od. 0.0 %"} <= plus
     assert not any("Riese" in t or "brot" in t for t in plus)
+
+
+def test_interspar_pdf_layout():
+    path = FIXTURES / "interspar_kw47_bier.pdf"
+    deals = {d.title: d for d in pdf_layout.parse(path.read_bytes(), "interspar", "x", 2026)}
+    assert set(deals) == {"Zipfer Märzen", "Zipfer Urtyp", "Zipfer 0,0% Alkoholfrei", "Kozel Premium Lager"}
+    urtyp = deals["Zipfer Urtyp"]
+    assert (urtyp.price, urtyp.regular_price, urtyp.volume_l) == (14.3, 28.6, 10.0)
+    assert (urtyp.valid_from, urtyp.valid_to) == ("2026-11-19", "2026-11-25")
+    assert deals["Kozel Premium Lager"].condition == "Ab 4 dosen je"
+
+
+def test_interspar_urls():
+    from datetime import date
+
+    from custom_components.bieralarm.sources import interspar
+
+    assert interspar.flipbook_urls("Oberösterreich", date(2026, 11, 20)) == [
+        "https://flugblatt.interspar.at/oberoesterreich/oberoesterreich_kw47/",
+        "https://flugblatt.interspar.at/oberoesterreich/oberoesterreich_kw46/",
+    ]
+    assert interspar.region_slug("Burgenland") == "wien"
