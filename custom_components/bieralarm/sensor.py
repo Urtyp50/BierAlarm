@@ -19,7 +19,9 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    async_add_entities([DealCountSensor(coordinator), BestPriceSensor(coordinator)])
+    async_add_entities(
+        [DealCountSensor(coordinator), BestPriceSensor(coordinator), BestCratePriceSensor(coordinator)]
+    )
 
 
 class _Base(CoordinatorEntity[BierAlarmCoordinator], SensorEntity):
@@ -64,6 +66,7 @@ class DealCountSensor(_Base):
                     "package": d.package,
                     "price": d.price,
                     "price_per_liter": d.price_per_liter,
+                    "price_per_crate": d.price_per_crate,
                     "valid_to": d.valid_to,
                     "match": d.id in matches,
                 }
@@ -98,7 +101,23 @@ class BestPriceSensor(_Base):
             "title": best.title,
             "package": best.package,
             "price": best.price,
+            "price_per_crate": best.price_per_crate,
             "condition": best.condition,
             "valid_to": best.valid_to,
             "url": best.url,
         }
+
+
+class BestCratePriceSensor(BestPriceSensor):
+    """Cheapest deal as price for a 20er-Kiste à 0,5 l (10 liters)."""
+
+    _attr_icon = "mdi:beer-outline"
+    _attr_native_unit_of_measurement = "€"
+
+    def __init__(self, coordinator: BierAlarmCoordinator) -> None:
+        _Base.__init__(self, coordinator, "best_crate_price")
+
+    @property
+    def native_value(self) -> float | None:
+        best = self._best()
+        return best.price_per_crate if best else None

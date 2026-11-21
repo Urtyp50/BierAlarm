@@ -6,6 +6,8 @@ from dataclasses import asdict, dataclass, field
 import hashlib
 import re
 
+CRATE_LITERS = 10.0  # 20 Flaschen à 0,5 l
+
 BEER_WORDS = (
     "bier",
     "märzen",
@@ -86,6 +88,13 @@ class Deal:
         return round(self.price / self.volume_l, 2)
 
     @property
+    def price_per_crate(self) -> float | None:
+        """Comparison price for a 20er-Kiste à 0,5 l (10 liters)."""
+        if self.price is None or not self.volume_l:
+            return None
+        return round(self.price / self.volume_l * CRATE_LITERS, 2)
+
+    @property
     def discount_percent(self) -> int | None:
         if not self.price or not self.regular_price or self.regular_price <= self.price:
             return None
@@ -104,6 +113,7 @@ class Deal:
             id=self.id,
             title=self.title,
             price_per_liter=self.price_per_liter,
+            price_per_crate=self.price_per_crate,
             discount_percent=self.discount_percent,
         )
         return data
@@ -128,8 +138,8 @@ def parse_volume(text: str | None) -> float | None:
     single = re.search(_NUM + r"\s*(ml|cl|l(?:iter)?)\b", t)
     if single:
         liters = _to_liter(_f(single.group(1)), single.group(2))
-        crate = re.search(r"kiste\s*=?\s*(\d+)", t)
-        if crate:
+        crate = re.search(r"kiste\s*=\s*(\d+)", t)
+        if crate and int(crate.group(1)) > 0:
             liters *= int(crate.group(1))
         return round(liters, 3)
     return None

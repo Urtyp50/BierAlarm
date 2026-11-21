@@ -11,7 +11,7 @@ const day = (iso) => {
 const safeUrl = (u) => (typeof u === "string" && /^https:\/\//.test(u) ? u : null);
 
 const SORTS = {
-  liter: { label: "Literpreis", fn: (a, b) => (a.price_per_liter ?? 1e9) - (b.price_per_liter ?? 1e9) },
+  liter: { label: "Preis pro 20er-Kiste", fn: (a, b) => (a.price_per_liter ?? 1e9) - (b.price_per_liter ?? 1e9) },
   price: { label: "Preis", fn: (a, b) => (a.price ?? 1e9) - (b.price ?? 1e9) },
   discount: { label: "Rabatt", fn: (a, b) => (b.discount_percent ?? -1) - (a.discount_percent ?? -1) },
   until: { label: "Endet bald", fn: (a, b) => String(a.valid_to ?? "9").localeCompare(String(b.valid_to ?? "9")) },
@@ -123,12 +123,15 @@ class BierAlarmPanel extends HTMLElement {
           </div>
           <h3>${esc(d.title)}</h3>
           <div class="pkg">${esc(d.package || "")}</div>
-          <div class="price">
-            <span class="now">${euro(d.price)}</span>
-            ${d.regular_price ? `<span class="was">${euro(d.regular_price)}</span>` : ""}
+          <div class="crate" title="Umgerechnet auf 20 × 0,5 l (10 Liter)">
+            <span class="label">20er-Kiste</span>
+            <span class="now">${d.price_per_crate != null ? euro(d.price_per_crate) : "–"}</span>
             ${d.discount_percent ? `<span class="pct">-${d.discount_percent}%</span>` : ""}
           </div>
-          <div class="pl">${d.price_per_liter != null ? `${euro(d.price_per_liter)} / Liter` : "Literpreis unbekannt"}</div>
+          <div class="pl">
+            Aktion: <b>${euro(d.price)}</b>${d.regular_price ? ` <span class="was">${euro(d.regular_price)}</span>` : ""}
+            ${d.price_per_liter != null ? ` · ${euro(d.price_per_liter)}/l` : ""}
+          </div>
           ${d.condition ? `<div class="cond">${esc(d.condition)}</div>` : ""}
           <div class="foot">
             <span>${valid}</span>
@@ -177,7 +180,7 @@ class BierAlarmPanel extends HTMLElement {
           <section class="stats">
             <div><span class="n">${data.deals.length}</span><span>Bieraktionen</span></div>
             <div><span class="n">${data.deals.filter((d) => d.match).length}</span><span>Alarm-Treffer</span></div>
-            <div><span class="n">${best ? euro(best.price_per_liter) : "–"}</span><span>bester Literpreis</span></div>
+            <div><span class="n">${best ? euro(best.price_per_crate) : "–"}</span><span>billigste 20er-Kiste</span></div>
             <div><span class="n small">${esc(updated)}</span><span>zuletzt geprüft</span></div>
           </section>
           <section class="filters">
@@ -200,13 +203,15 @@ class BierAlarmPanel extends HTMLElement {
           </section>
           <div class="hint">
             Alarm bei: ${esc(data.favorite_brands || "keinen Lieblingsmarken")}${
-              data.max_price_per_liter ? ` oder unter ${euro(data.max_price_per_liter)}/Liter` : ""
-            } · ändern unter Einstellungen → Geräte & Dienste → BierAlarm → Konfigurieren
+              data.max_price_per_liter
+                ? ` oder unter ${euro(data.max_price_per_liter * 10)} pro 20er-Kiste (${euro(data.max_price_per_liter)}/l)`
+                : ""
+            } · Kistenpreis = umgerechnet auf 20 × 0,5 l, ohne Pfand · ändern unter Einstellungen → Geräte & Dienste → BierAlarm → Konfigurieren
           </div>
           <section class="grid">
             ${deals.length ? deals.map((d) => this._card(d)).join("") : `<div class="empty">Keine passenden Bieraktionen gefunden.</div>`}
           </section>
-          <footer>Daten von penny.at, lidl.at und billa.at. Angaben ohne Gewähr. Preise teils exkl. Pfand.</footer>`
+          <footer>Daten von penny.at, lidl.at, mpreis.at und billa.at. Angaben ohne Gewähr. Preise teils exkl. Pfand.</footer>`
             : !data && !this._error
               ? `<div class="empty">Lädt…</div>`
               : ""
@@ -280,13 +285,15 @@ const STYLE = `
   .store { background:var(--secondary-background-color); }
   .s-penny { background:#cd1414; color:#fff; } .s-lidl { background:#0050aa; color:#fff; }
   .s-billa, .s-billa_plus { background:#fed500; color:#222; }
+  .s-mpreis { background:#e2001a; color:#fff; }
   .alarm { background:var(--warning-color,#ffa600); color:#222; }
   .ai { background:var(--secondary-background-color); color:var(--secondary-text-color); }
   h3 { margin:4px 0 0; font-size:16px; line-height:1.25; }
   .pkg { color:var(--secondary-text-color); font-size:13px; }
-  .price { display:flex; align-items:baseline; gap:8px; margin-top:4px; }
+  .crate { display:flex; align-items:baseline; gap:8px; margin-top:4px; flex-wrap:wrap; }
+  .crate .label { font-size:12px; color:var(--secondary-text-color); text-transform:uppercase; letter-spacing:.3px; }
   .now { font-size:22px; font-weight:700; color:var(--primary-color); }
-  .was { text-decoration:line-through; color:var(--secondary-text-color); font-size:13px; }
+  .was { text-decoration:line-through; color:var(--secondary-text-color); font-size:12px; }
   .pct { background:var(--error-color,#db4437); color:#fff; font-size:12px; font-weight:600; padding:1px 6px; border-radius:6px; }
   .pl { font-size:13px; }
   .cond { font-size:12px; color:var(--secondary-text-color); }

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from bieralarm.models import Deal, looks_like_beer, matches_brand, parse_volume
-from bieralarm.sources import billa, leaflet, lidl, penny
+from bieralarm.sources import billa, leaflet, lidl, mpreis, penny
 from bieralarm.sources.nuxt import unflatten
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -26,6 +26,7 @@ def _fixture(name: str) -> str:
         ("6 x 0,5l Dose", 3.0),
         ("500 ml", 0.5),
         ("1 Kiste = 20 Flaschen à 0,5 Liter", 10.0),
+        ("Kiste 0,5 Liter", 0.5),
         ("Einweg", None),
         (None, None),
     ],
@@ -43,7 +44,10 @@ def test_beer_detection():
 def test_deal_math_and_brand_match():
     deal = Deal(store="penny", name="Märzen", brand="Gösser", price=0.69, regular_price=1.38, volume_l=0.5)
     assert deal.price_per_liter == 1.38
+    assert deal.price_per_crate == 13.8
     assert deal.discount_percent == 50
+    can = Deal(store="penny", name="Helles", price=0.69, volume_l=0.33)
+    assert can.price_per_crate == 20.91
     assert deal.title == "Gösser Märzen"
     assert matches_brand(deal, ["gösser"])
     assert not matches_brand(deal, ["Stiegl"])
@@ -76,6 +80,21 @@ def test_lidl_region():
     assert "Lidl Plus" in (kaiser.condition or "")
     assert kaiser.valid_from == "2026-11-19"
     assert kaiser.valid_to == "2026-11-21"
+
+
+def test_mpreis():
+    deals = mpreis.parse(_fixture("mpreis_bier.html"))
+    titles = [d.title for d in deals]
+    assert not any("Frucade" in t for t in titles)  # lemonade listed under 'Bier'
+    zipfer = next(d for d in deals if d.title == "Zipfer Märzen 20x 0,5 Liter")
+    assert zipfer.price == 14.8
+    assert zipfer.price_per_crate == 14.8
+    egger = next(d for d in deals if d.brand == "Egger")
+    assert egger.condition == "1+1 gratis"
+    assert egger.price_per_crate == 11.5
+    kaiser = next(d for d in deals if d.brand == "Kaiser")
+    assert kaiser.package == "Kiste 20x 0,5 Liter"
+    assert zipfer.url.endswith("/shop/p/zipfer-maerzen-20x-05-liter-800210")
 
 
 def test_billa_finds_pdfs():

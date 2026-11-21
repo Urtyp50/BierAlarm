@@ -17,7 +17,7 @@
           "billa_region": "BILLA-Region",
           "ai_task_entity": "KI-Aufgabe (für PDF-Flugblätter)",
           "favorite_brands": "Lieblingsmarken (mit Komma getrennt)",
-          "max_price_per_liter": "Alarm unter Literpreis",
+          "max_price_per_liter": "Alarm unter Literpreis (×10 = Preis pro 20er-Kiste)",
           "notify_entity": "Benachrichtigung an (leer = Home-Assistant-Meldung)",
           "extra_leaflets": "Weitere PDF-Flugblatt-Links (einer pro Zeile)"
         },
@@ -43,7 +43,7 @@
           "billa_region": "BILLA-Region",
           "ai_task_entity": "KI-Aufgabe (für PDF-Flugblätter)",
           "favorite_brands": "Lieblingsmarken (mit Komma getrennt)",
-          "max_price_per_liter": "Alarm unter Literpreis",
+          "max_price_per_liter": "Alarm unter Literpreis (×10 = Preis pro 20er-Kiste)",
           "notify_entity": "Benachrichtigung an (leer = Home-Assistant-Meldung)",
           "extra_leaflets": "Weitere PDF-Flugblatt-Links (einer pro Zeile)"
         }
@@ -52,8 +52,15 @@
   },
   "entity": {
     "sensor": {
-      "deals": { "name": "Bieraktionen" },
-      "best_price": { "name": "Bester Literpreis" }
+      "deals": {
+        "name": "Bieraktionen"
+      },
+      "best_price": {
+        "name": "Bester Literpreis"
+      },
+      "best_crate_price": {
+        "name": "Bester Preis pro 20er-Kiste"
+      }
     }
   },
   "services": {

@@ -17,7 +17,7 @@
           "billa_region": "BILLA region",
           "ai_task_entity": "AI Task entity (for PDF leaflets)",
           "favorite_brands": "Favourite brands (comma separated)",
-          "max_price_per_liter": "Alarm below price per liter",
+          "max_price_per_liter": "Alarm below price per liter (×10 = price per 20 crate)",
           "notify_entity": "Notify entity (empty = HA notification)",
           "extra_leaflets": "Extra PDF leaflet links (one per line)"
         },
@@ -43,7 +43,7 @@
           "billa_region": "BILLA region",
           "ai_task_entity": "AI Task entity (for PDF leaflets)",
           "favorite_brands": "Favourite brands (comma separated)",
-          "max_price_per_liter": "Alarm below price per liter",
+          "max_price_per_liter": "Alarm below price per liter (×10 = price per 20 crate)",
           "notify_entity": "Notify entity (empty = HA notification)",
           "extra_leaflets": "Extra PDF leaflet links (one per line)"
         }
@@ -52,8 +52,15 @@
   },
   "entity": {
     "sensor": {
-      "deals": { "name": "Beer deals" },
-      "best_price": { "name": "Best price per liter" }
+      "deals": {
+        "name": "Beer deals"
+      },
+      "best_price": {
+        "name": "Best price per liter"
+      },
+      "best_crate_price": {
+        "name": "Best price per 20 crate"
+      }
     }
   },
   "services": {

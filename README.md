@@ -8,11 +8,13 @@ Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreic
 |---|---|---|
 | PENNY | Bier-Kategorie auf penny.at (strukturierte Daten) | Nein |
 | Lidl | Bieraktion-Kategorie auf lidl.at, je Region (Ost/West/Süd) | Nein |
+| MPREIS | Seite „Bier in Aktion“ auf mpreis.at | Nein |
 | BILLA / BILLA PLUS | PDF-Flugblatt von billa.at | Ja |
 | Eigene Flugblätter | Beliebige PDF-Links | Ja |
 
-- **Seitenleiste „BierAlarm“**: alle Aktionen als Karten, sortierbar nach Literpreis, Preis, Rabatt oder Ablauf, mit Filter nach Markt und Suche
-- **Sensoren**: `sensor.bieralarm_bieraktionen` (Anzahl plus Liste) und `sensor.bieralarm_bester_literpreis`
+- **Preis pro 20er-Kiste**: Jede Aktion wird auf 20 × 0,5 l (10 Liter) umgerechnet, damit Dosen, Träger und Kisten vergleichbar sind (ohne Pfand)
+- **Seitenleiste „BierAlarm“**: alle Aktionen als Karten, sortierbar nach Kistenpreis, Preis, Rabatt oder Ablauf, mit Filter nach Markt und Suche
+- **Sensoren**: `sensor.bieralarm_bieraktionen` (Anzahl plus Liste), `sensor.bieralarm_bester_preis_pro_20er_kiste` und `sensor.bieralarm_bester_literpreis`
 - **Alarm**: Benachrichtigung über eine `notify`-Entität (z. B. dein Handy) oder als Home-Assistant-Meldung. Jede Aktion wird nur einmal gemeldet.
 - **Event** `bieralarm_new_deal` für eigene Automationen
 - **Aktion** `bieralarm.refresh`, optional mit `reanalyse: true`, damit die KI die PDFs neu liest

@@ -36,13 +36,14 @@ from .const import (
     STORAGE_KEY,
     STORAGE_VERSION,
     STORE_LIDL,
+    STORE_MPREIS,
     STORE_NAMES,
     STORE_PENNY,
     UPDATE_INTERVAL,
     USER_AGENT,
 )
 from .models import Deal, matches_brand
-from .sources import billa, leaflet, lidl, penny
+from .sources import billa, leaflet, lidl, mpreis, penny
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -109,6 +110,8 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
             jobs[STORE_PENNY] = self._fetch_penny()
         if STORE_LIDL in self.stores:
             jobs[STORE_LIDL] = self._fetch_lidl()
+        if STORE_MPREIS in self.stores:
+            jobs[STORE_MPREIS] = self._fetch_mpreis()
         if any(s in self.stores for s in AI_STORES):
             jobs["billa"] = self._fetch_billa()
         if self._extra_leaflets():
@@ -152,7 +155,11 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
     # ---------------------------------------------------------------- sources
     async def _get(self, url: str, *, binary: bool = False) -> str | bytes:
         timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT * (4 if binary else 1))
-        headers = {"User-Agent": USER_AGENT, "Accept-Language": "de-AT,de;q=0.9"}
+        headers = {
+            "User-Agent": USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "de-AT,de;q=0.9",
+        }
         async with self._session.get(url, headers=headers, timeout=timeout) as resp:
             if resp.status == 403:
                 raise UpdateFailed(f"{url}: Zugriff verweigert (403)")
@@ -165,6 +172,9 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
     async def _fetch_lidl(self) -> list[Deal]:
         region = str(self.opts.get(CONF_LIDL_REGION, DEFAULT_LIDL_REGION))
         return lidl.parse(await self._get(lidl.URL), region)
+
+    async def _fetch_mpreis(self) -> list[Deal]:
+        return mpreis.parse(await self._get(mpreis.URL))
 
     async def _fetch_billa(self) -> list[Deal]:
         region = self.opts.get(CONF_BILLA_REGION, DEFAULT_BILLA_REGION)
@@ -275,7 +285,7 @@ def _today() -> str:
 
 def _deal_fields(deal: Deal) -> dict:
     data = deal.as_dict()
-    for key in ("id", "title", "price_per_liter", "discount_percent"):
+    for key in ("id", "title", "price_per_liter", "price_per_crate", "discount_percent"):
         data.pop(key, None)
     return data
 
@@ -283,8 +293,8 @@ def _deal_fields(deal: Deal) -> dict:
 def _line(deal: Deal) -> str:
     price = f"€ {deal.price:.2f}".replace(".", ",") if deal.price is not None else "?"
     per_l = (
-        f" ({deal.price_per_liter:.2f} €/l)".replace(".", ",")
-        if deal.price_per_liter
+        f" (20er-Kiste € {deal.price_per_crate:.2f})".replace(".", ",")
+        if deal.price_per_crate
         else ""
     )
     store = STORE_NAMES.get(deal.store, deal.store)

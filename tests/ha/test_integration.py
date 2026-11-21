@@ -67,6 +67,9 @@ async def test_setup_sensors_panel_ws_and_alarm(hass: HomeAssistant, mock_pages,
     assert int(count.state) > 3
     best = hass.states.get("sensor.bieralarm_best_price_per_liter")
     assert float(best.state) > 0
+    crate = hass.states.get("sensor.bieralarm_best_price_per_20_crate")
+    assert crate is not None
+    assert float(crate.state) == round(float(best.state) * 10, 2)
 
     # Ottakringer is a favourite brand -> at least one alarm event
     assert any("Ottakringer" in e.data["title"] for e in events)
