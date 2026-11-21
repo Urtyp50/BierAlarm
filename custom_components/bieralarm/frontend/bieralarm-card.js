@@ -571,7 +571,7 @@ class BierAlarmCard extends HTMLElement {
       this._chips(box, g.items.map((b) => ({
         id: b.entity_id, label: b.attributes.sort || b.attributes.beer || b.attributes.friendly_name,
         icon: b.state === "on" ? "mdi:bell-ring" : "mdi:bell-outline",
-        pic: b.attributes.entity_picture || "",
+        pic: /^https:\/\//.test(b.attributes.entity_picture || "") ? b.attributes.entity_picture : "",
         sub: b.attributes.deals ? b.attributes.deals + " in Aktion" : "",
         on: b.state === "on", disabled: b.state === "unavailable",
         click: () => this._hass.callService("switch", "toggle", { entity_id: b.entity_id })
