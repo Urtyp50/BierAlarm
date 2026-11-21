@@ -218,11 +218,19 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
             return cached["stores"]
         query = nearby.build_query(lat, lon, radius, self.stores)
         timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT * 2)
-        async with self._session.post(
-            nearby.URL, data={"data": query}, headers={"User-Agent": USER_AGENT}, timeout=timeout
-        ) as resp:
-            resp.raise_for_status()
-            result = nearby.parse(await resp.json(content_type=None), lat, lon, radius)
+        last_err: Exception | None = None
+        for url in nearby.URLS:
+            try:
+                async with self._session.post(
+                    url, data={"data": query}, headers={"User-Agent": nearby.USER_AGENT}, timeout=timeout
+                ) as resp:
+                    resp.raise_for_status()
+                    result = nearby.parse(await resp.json(content_type=None), lat, lon, radius)
+                break
+            except (aiohttp.ClientError, TimeoutError) as err:
+                last_err = err
+        else:
+            raise UpdateFailed(f"OpenStreetMap: {last_err}")
         self._cache["nearby"] = {"key": key, "fetched": dt_util.utcnow().isoformat(), "stores": result}
         return result
 

@@ -11,6 +11,10 @@ from math import asin, cos, radians, sin, sqrt
 from ..const import STORE_BILLA, STORE_BILLA_PLUS, STORE_LIDL, STORE_MPREIS, STORE_PENNY
 
 URL = "https://overpass-api.de/api/interpreter"
+# Public mirror, used when the main server is busy (502/504).
+URLS = (URL, "https://overpass.kumi.systems/api/interpreter")
+# OpenStreetMap asks for an honest client name; browser-like agents get 406.
+USER_AGENT = "BierAlarm-HomeAssistant (+https://github.com/Urtyp50/BierAlarm)"
 
 # OpenStreetMap brand:wikidata ids of the chains BierAlarm reads.
 WIKIDATA = {

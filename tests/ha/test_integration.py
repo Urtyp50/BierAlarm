@@ -165,5 +165,7 @@ async def test_radius_skips_far_stores(hass: HomeAssistant, mock_pages) -> None:
         return sum(1 for c in mock_pages.mock_calls if c[0].lower() == "post")
 
     assert posts() == 1
+    ua = next(c[3] for c in mock_pages.mock_calls if c[0].lower() == "post")["User-Agent"]
+    assert "Mozilla" not in ua  # OpenStreetMap answers 406 to browser-like agents
     await entry.runtime_data.async_refresh()
     assert posts() == 1
