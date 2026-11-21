@@ -1,0 +1,71 @@
+{
+  "config": {
+    "abort": {
+      "single_instance_allowed": "BierAlarm ist bereits eingerichtet."
+    },
+    "error": {
+      "no_stores": "Wähle mindestens einen Markt oder trag einen Flugblatt-Link ein.",
+      "ai_required": "BILLA und eigene PDF-Flugblätter brauchen eine KI-Aufgabe (AI Task), die das Flugblatt liest."
+    },
+    "step": {
+      "user": {
+        "title": "BierAlarm",
+        "description": "Findet Bieraktionen in den Flugblättern österreichischer Supermärkte.",
+        "data": {
+          "stores": "Märkte",
+          "lidl_region": "Lidl-Region",
+          "billa_region": "BILLA-Region",
+          "ai_task_entity": "KI-Aufgabe (für PDF-Flugblätter)",
+          "favorite_brands": "Lieblingsmarken (mit Komma getrennt)",
+          "max_price_per_liter": "Alarm unter Literpreis",
+          "notify_entity": "Benachrichtigung an (leer = Home-Assistant-Meldung)",
+          "extra_leaflets": "Weitere PDF-Flugblatt-Links (einer pro Zeile)"
+        },
+        "data_description": {
+          "favorite_brands": "z. B. Gösser, Stiegl, Ottakringer. Du bekommst einen Alarm, sobald eine davon in Aktion ist.",
+          "max_price_per_liter": "Zusätzlich gibt es einen Alarm, wenn irgendein Bier pro Liter billiger ist.",
+          "ai_task_entity": "PENNY und Lidl funktionieren ohne KI. BILLA gibt es nur als PDF, das die KI einmal pro Woche liest."
+        }
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "no_stores": "Wähle mindestens einen Markt oder trag einen Flugblatt-Link ein.",
+      "ai_required": "BILLA und eigene PDF-Flugblätter brauchen eine KI-Aufgabe (AI Task), die das Flugblatt liest."
+    },
+    "step": {
+      "init": {
+        "title": "BierAlarm",
+        "data": {
+          "stores": "Märkte",
+          "lidl_region": "Lidl-Region",
+          "billa_region": "BILLA-Region",
+          "ai_task_entity": "KI-Aufgabe (für PDF-Flugblätter)",
+          "favorite_brands": "Lieblingsmarken (mit Komma getrennt)",
+          "max_price_per_liter": "Alarm unter Literpreis",
+          "notify_entity": "Benachrichtigung an (leer = Home-Assistant-Meldung)",
+          "extra_leaflets": "Weitere PDF-Flugblatt-Links (einer pro Zeile)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "deals": { "name": "Bieraktionen" },
+      "best_price": { "name": "Bester Literpreis" }
+    }
+  },
+  "services": {
+    "refresh": {
+      "name": "Aktualisieren",
+      "description": "Bieraktionen neu abrufen.",
+      "fields": {
+        "reanalyse": {
+          "name": "PDF-Flugblätter neu lesen",
+          "description": "Die KI liest die PDF-Flugblätter erneut, statt das gespeicherte Ergebnis zu verwenden."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+refresh:
+  fields:
+    reanalyse:
+      default: false
+      selector:
+        boolean:

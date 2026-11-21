@@ -1,0 +1,71 @@
+{
+  "config": {
+    "abort": {
+      "single_instance_allowed": "BierAlarm is already set up."
+    },
+    "error": {
+      "no_stores": "Choose at least one store or add a leaflet link.",
+      "ai_required": "BILLA and your own PDF leaflets need an AI Task entity to read the leaflet."
+    },
+    "step": {
+      "user": {
+        "title": "BierAlarm",
+        "description": "Find beer deals in Austrian supermarket leaflets.",
+        "data": {
+          "stores": "Stores",
+          "lidl_region": "Lidl region",
+          "billa_region": "BILLA region",
+          "ai_task_entity": "AI Task entity (for PDF leaflets)",
+          "favorite_brands": "Favourite brands (comma separated)",
+          "max_price_per_liter": "Alarm below price per liter",
+          "notify_entity": "Notify entity (empty = HA notification)",
+          "extra_leaflets": "Extra PDF leaflet links (one per line)"
+        },
+        "data_description": {
+          "favorite_brands": "e.g. Gösser, Stiegl, Ottakringer. You get an alarm when one of them is on offer.",
+          "max_price_per_liter": "You also get an alarm when any beer is cheaper than this per liter.",
+          "ai_task_entity": "PENNY and Lidl work without AI. BILLA only publishes a PDF, which is read by the AI once per week."
+        }
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "no_stores": "Choose at least one store or add a leaflet link.",
+      "ai_required": "BILLA and your own PDF leaflets need an AI Task entity to read the leaflet."
+    },
+    "step": {
+      "init": {
+        "title": "BierAlarm",
+        "data": {
+          "stores": "Stores",
+          "lidl_region": "Lidl region",
+          "billa_region": "BILLA region",
+          "ai_task_entity": "AI Task entity (for PDF leaflets)",
+          "favorite_brands": "Favourite brands (comma separated)",
+          "max_price_per_liter": "Alarm below price per liter",
+          "notify_entity": "Notify entity (empty = HA notification)",
+          "extra_leaflets": "Extra PDF leaflet links (one per line)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "deals": { "name": "Beer deals" },
+      "best_price": { "name": "Best price per liter" }
+    }
+  },
+  "services": {
+    "refresh": {
+      "name": "Refresh",
+      "description": "Fetch the beer deals again.",
+      "fields": {
+        "reanalyse": {
+          "name": "Re-read PDF leaflets",
+          "description": "Ask the AI to read the PDF leaflets again instead of using the cached result."
+        }
+      }
+    }
+  }
+}

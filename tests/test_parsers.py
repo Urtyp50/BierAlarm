@@ -1,0 +1,97 @@
+"""Parser tests. Fixtures are saved copies of the real pages (KW 47/2026)."""
+
+from pathlib import Path
+
+import pytest
+
+from bieralarm.models import Deal, looks_like_beer, matches_brand, parse_volume
+from bieralarm.sources import billa, leaflet, lidl, penny
+from bieralarm.sources.nuxt import unflatten
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def _fixture(name: str) -> str:
+    path = FIXTURES / name
+    if not path.exists():
+        pytest.skip(f"fixture {name} missing")
+    return path.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("text", "liters"),
+    [
+        ("Je 20x 0,5 l", 10.0),
+        ("0,33 liter Flasche", 0.33),
+        ("6 x 0,5l Dose", 3.0),
+        ("500 ml", 0.5),
+        ("1 Kiste = 20 Flaschen à 0,5 Liter", 10.0),
+        ("Einweg", None),
+        (None, None),
+    ],
+)
+def test_parse_volume(text, liters):
+    assert parse_volume(text) == liters
+
+
+def test_beer_detection():
+    assert looks_like_beer("Gösser Märzen 0,5 Liter")
+    assert looks_like_beer("Helles", "Ottakringer")
+    assert not looks_like_beer("Vöslauer Mineralwasser")
+
+
+def test_deal_math_and_brand_match():
+    deal = Deal(store="penny", name="Märzen", brand="Gösser", price=0.69, regular_price=1.38, volume_l=0.5)
+    assert deal.price_per_liter == 1.38
+    assert deal.discount_percent == 50
+    assert deal.title == "Gösser Märzen"
+    assert matches_brand(deal, ["gösser"])
+    assert not matches_brand(deal, ["Stiegl"])
+
+
+def test_unflatten_devalue():
+    flat = [{"a": 1, "b": 2}, "x", ["Reactive", 3], {"c": 4}, [5, 1], 7]
+    assert unflatten(flat) == {"a": "x", "b": {"c": [7, "x"]}}
+
+
+def test_penny():
+    deals = penny.parse(_fixture("penny_bier.html"))
+    assert deals
+    otta = next(d for d in deals if d.brand == "Ottakringer")
+    assert otta.price == 0.69
+    assert otta.regular_price == 1.09
+    assert otta.volume_l == 0.33
+    assert otta.valid_to == "2026-11-25"
+    assert otta.price_per_liter == 2.09
+
+
+def test_lidl_region():
+    html = _fixture("lidl_bier.html")
+    deals = lidl.parse(html, "1")
+    assert deals
+    kaiser = next(d for d in deals if d.brand == "KAISER")
+    assert kaiser.price == 14.8
+    assert kaiser.volume_l == 10.0
+    assert kaiser.price_per_liter == 1.48
+    assert "Lidl Plus" in (kaiser.condition or "")
+    assert kaiser.valid_from == "2026-11-19"
+    assert kaiser.valid_to == "2026-11-21"
+
+
+def test_billa_finds_pdfs():
+    found = billa.find_leaflets(_fixture("billa_flugblatt.html"), "Wien")
+    assert found["billa"].endswith("BILLA_FB_KW_47_2026_Wien.pdf")
+    assert found["billa_plus"].endswith("BILLA_PLUS_FB_KW_47_2026_Wien.pdf")
+
+
+def test_ai_answer_parsing():
+    answer = """```json
+    {"deals": [{"brand": "Gösser", "name": "Märzen", "package": "0,5 Liter Dose",
+      "price": "0,69", "regular_price": 1.39, "condition": "bei 12 Dosen je"},
+      {"brand": "", "name": "", "price": 1}]}
+    ```"""
+    deals = leaflet.parse_ai_answer(answer, "billa", "https://example.invalid/x.pdf")
+    assert len(deals) == 1
+    assert deals[0].price == 0.69
+    assert deals[0].price_per_liter == 1.38
+    assert deals[0].source == "ai"
