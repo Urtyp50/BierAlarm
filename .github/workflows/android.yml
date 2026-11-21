@@ -45,8 +45,9 @@ jobs:
       - name: APK bauen
         working-directory: android
         run: |
-          set -o pipefail
-          yes | buildozer -v android debug 2>&1 | tee build.log
+          # 'yes' answers the SDK licence questions; it ends with SIGPIPE, so check the APK instead of the exit code
+          yes | buildozer -v android debug 2>&1 | tee build.log || true
+          ls -la bin/*.apk
 
       - name: Fehler als Hinweis zeigen
         if: failure()
