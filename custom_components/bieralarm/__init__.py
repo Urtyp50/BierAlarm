@@ -148,7 +148,7 @@ def ws_deals(hass: HomeAssistant, connection: websocket_api.ActiveConnection, ms
             "nearby": (data.nearby if data else None) or {},
             "out_of_range": data.out_of_range if data else [],
             "deals": [
-                {**d.as_dict(), "match": d.id in matches, "distance_km": coordinator.distance(d.store)}
+                {**d.as_dict(), "match": d.id in matches, "favorite": coordinator.is_favorite(d), "distance_km": coordinator.distance(d.store)}
                 for d in (data.deals if data else [])
             ],
         },

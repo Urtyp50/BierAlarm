@@ -495,24 +495,31 @@ class BierAlarmCard extends HTMLElement {
     const lo = deals.length ? Math.min(...deals.map((d) => d.price_per_crate)) : 0;
     const hi = deals.length ? Math.max(...deals.map((d) => d.price_per_crate)) : 1;
     const rows = shown.slice(0, C.max_rows);
-    if (!rows.length) {
+    // Rebuild the rows only when they change: re-creating them on every update makes the logos blink.
+    const rsig = JSON.stringify([rows, q, store, lo, hi, C.store_logos]);
+    if (E.rows._sig === rsig) {
+      // nothing changed
+    } else if (!rows.length) {
+      E.rows._sig = rsig;
       E.rows.innerHTML = `<div class="empty">${deals.length ? "Gerade keine Aktion" + (q ? " für „" + this._esc(q) + "“" : "") + (store && store !== BA_ALL ? " bei " + this._esc(store) : "") + "." : "Noch keine Aktionen geladen."}</div>`;
     } else {
+      E.rows._sig = rsig;
       E.rows.innerHTML = rows.map((d) => {
         const col = BA_STORE[d.store] || "#546e7a";
         const pct = this._pct(d.price_per_crate, lo - (hi - lo) * 0.15, hi);
-        const bar = d.match ? "#e65100" : pct < 45 ? "#2e7d32" : pct < 75 ? "#ef6c00" : "#8a8a8a";
+        const fav = d.favorite !== undefined ? d.favorite : d.match;
+        const bar = fav ? "#e65100" : pct < 45 ? "#2e7d32" : pct < 75 ? "#ef6c00" : "#8a8a8a";
         const logo = C.store_logos ? (C.logos[d.store] || BA_LOGO[d.store]) : null;
         const meta = [logo ? d.store : null, d.package && !String(d.title).includes(d.package) ? d.package : null,
           this._alc(d), d.condition, d.distance_km !== null && d.distance_km !== undefined ? this._fmt(d.distance_km, 1) + " km" : null]
           .filter(Boolean).join(" · ");
         const until = this._date(d.valid_to);
-        return `<div class="row${d.match ? " hit" : ""}">
+        return `<div class="row${fav ? " hit" : ""}">
           <div class="rtop">
             ${logo ? `<span class="logo" title="${this._esc(d.store)}"><img src="${this._esc(logo)}" alt="${this._esc(d.store)}" loading="lazy" referrerpolicy="no-referrer"></span>` : ""}
             <span class="st${logo ? " alt" : ""}" style="background:${col}">${this._esc(d.store)}</span>
             <div class="nm"><b>${this._esc(d.title)}</b><em>${this._esc(meta || " ")}</em></div>
-            ${d.match ? '<ha-icon class="bell" icon="mdi:bell-ring"></ha-icon>' : ""}
+            ${fav ? '<ha-icon class="bell" icon="mdi:bell-ring"></ha-icon>' : ""}
             <div class="pr"><b>${this._eur(d.price_per_crate)}</b><em>${this._eur(d.price)}${until ? " · bis " + until : ""}</em></div>
           </div>
           <div class="track"><i style="width:${pct}%;background:${bar}"></i></div>

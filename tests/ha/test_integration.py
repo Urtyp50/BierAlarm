@@ -141,6 +141,9 @@ async def test_brand_switches_and_filters(hass: HomeAssistant, mock_pages) -> No
     deals = hass.states.get("sensor.bieralarm_beer_deals").attributes["deals"]
     crates = [d["price_per_crate"] for d in deals if d["price_per_crate"] is not None]
     assert crates == sorted(crates)
+    # bell only for chosen beers: Gösser Märzen is on, the rest are no favourites
+    favs = {d["title"] for d in deals if d["favorite"]}
+    assert favs and all("Gösser" in t for t in favs)
 
 
 async def test_radius_skips_far_stores(hass: HomeAssistant, mock_pages) -> None:

@@ -80,6 +80,7 @@ class DealCountSensor(_Base):
                     "valid_to": d.valid_to,
                     "distance_km": self.coordinator.distance(d.store),
                     "match": d.id in matches,
+                    "favorite": self.coordinator.is_favorite(d),
                 }
                 for d in sorted(
                     data.deals, key=lambda d: (d.price_per_crate is None, d.price_per_crate or 0)

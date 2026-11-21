@@ -118,7 +118,7 @@ class BierAlarmPanel extends HTMLElement {
         <div class="body">
           <div class="top">
             <span class="store s-${esc(d.store)}">${esc(names[d.store] || d.store)}</span>
-            ${d.match ? `<span class="alarm" title="Passt zu deinem Alarm">🔔 Alarm</span>` : ""}
+            ${(d.favorite !== undefined ? d.favorite : d.match) ? `<span class="alarm" title="Gewählte Sorte">🔔 Alarm</span>` : ""}
             ${d.source === "ai" ? `<span class="ai" title="Von der KI aus dem PDF-Flugblatt gelesen">KI</span>` : ""}
           </div>
           <h3>${esc(d.title)}</h3>

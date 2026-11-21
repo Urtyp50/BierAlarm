@@ -219,6 +219,11 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
         await self._store.async_save(self._cache)
         return data
 
+    def is_favorite(self, deal: Deal) -> bool:
+        """One of the beers switched on in 'Benachrichtigen bei'."""
+        brands = self.favorite_brands
+        return bool(brands) and matches_brand(deal, brands)
+
     def is_match(self, deal: Deal) -> bool:
         """Alarm when a favourite brand is on offer OR the liter price is low enough."""
         brands = self.favorite_brands
