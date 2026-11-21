@@ -1,4 +1,6 @@
-# 🍺 BierAlarm
+<img src="custom_components/bieralarm/brand/icon@2x.png" width="128" align="right" alt="">
+
+# BierAlarm
 
 Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreichischer Supermärkte findet. Sie zeigt sie in einer eigenen Seite in der Seitenleiste an und schlägt Alarm, wenn deine Lieblingsmarke in Aktion ist oder der Literpreis unter dein Limit fällt.
 
@@ -15,6 +17,7 @@ Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreic
 - **Preis pro 20er-Kiste**: Jede Aktion wird auf 20 × 0,5 l (10 Liter) umgerechnet, damit Dosen, Träger und Kisten vergleichbar sind (ohne Pfand)
 - **Seitenleiste „BierAlarm“**: alle Aktionen als Karten, sortierbar nach Kistenpreis, Preis, Rabatt oder Ablauf, mit Filter nach Markt und Suche
 - **Sensoren**: `sensor.bieralarm_bieraktionen` (Anzahl plus Liste), `sensor.bieralarm_bester_preis_pro_20er_kiste` und `sensor.bieralarm_bester_literpreis`
+- **Umkreis**: nur Märkte mit einer Filiale im Umkreis (z. B. 7 km) um den Standort aus den Home-Assistant-Einstellungen. Die Filialen kommen einmal pro Woche von OpenStreetMap; dabei wird nur ein grob gerundeter Bereich abgefragt.
 - **Marken-Schalter**: `switch.bieralarm_alarm_zipfer` usw., ein Schalter pro Marke: an = benachrichtigen. Sie sind mit *Lieblingsmarken* in den Einstellungen verbunden.
 - **Filter für Dashboards**: `text.bieralarm_filter` (Suchtext, z. B. `Urtyp`) und `select.bieralarm_store_filter` (Markt)
 - **Alarm**: Benachrichtigung über eine `notify`-Entität (z. B. dein Handy) oder als Home-Assistant-Meldung. Jede Aktion wird nur einmal gemeldet.
@@ -47,6 +50,7 @@ Den Ordner `custom_components/bieralarm` nach `config/custom_components/` kopier
 | Lidl-Region | Ost (Wien/NÖ/Bgld), West (OÖ/Sbg/T/Vbg) oder Süd (Stmk/Ktn) |
 | BILLA-Region | Bevorzugtes Regional-Flugblatt |
 | KI-Aufgabe | Für BILLA und eigene PDFs nötig |
+| Umkreis | z. B. `7` km um dein Zuhause, `0` = alle Märkte |
 | Lieblingsmarken | z. B. `Gösser, Stiegl, Ottakringer` |
 | Alarm unter Literpreis | z. B. `1,50` €/l |
 | Benachrichtigung an | `notify`-Entität, leer = Home-Assistant-Meldung |

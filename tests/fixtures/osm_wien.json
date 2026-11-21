@@ -1,0 +1,116 @@
+{
+ "version": 0.6,
+ "elements": [
+  {
+   "type": "node",
+   "id": 369006983,
+   "lat": 48.2036684,
+   "lon": 16.3890167,
+   "tags": {
+    "addr:city": "Wien",
+    "addr:housenumber": "32",
+    "addr:street": "Landstraßer Hauptstraße",
+    "brand": "Penny",
+    "brand:wikidata": "Q284688",
+    "name": "Penny",
+    "shop": "supermarket"
+   }
+  },
+  {
+   "type": "node",
+   "id": 476422576,
+   "lat": 48.2203329,
+   "lon": 16.3827594,
+   "tags": {
+    "brand": "Penny",
+    "brand:wikidata": "Q284688",
+    "name": "Penny",
+    "shop": "supermarket"
+   }
+  },
+  {
+   "type": "node",
+   "id": 7047465748,
+   "lat": 48.197225,
+   "lon": 16.3360738,
+   "tags": {
+    "addr:city": "Wien",
+    "addr:housenumber": "1A",
+    "addr:street": "Felberstraße",
+    "brand": "Lidl",
+    "brand:wikidata": "Q151954",
+    "name": "Lidl",
+    "shop": "supermarket"
+   }
+  },
+  {
+   "type": "node",
+   "id": 916107815,
+   "lat": 48.1811107,
+   "lon": 16.3751801,
+   "tags": {
+    "addr:housenumber": "92",
+    "addr:street": "Favoritenstraße",
+    "brand": "Lidl",
+    "brand:wikidata": "Q151954",
+    "name": "Lidl",
+    "shop": "supermarket"
+   }
+  },
+  {
+   "type": "node",
+   "id": 5128681925,
+   "lat": 48.2029482,
+   "lon": 16.3917495,
+   "tags": {
+    "brand": "Billa Plus",
+    "brand:wikidata": "Q115431077",
+    "name": "Billa Plus",
+    "shop": "supermarket"
+   }
+  },
+  {
+   "type": "node",
+   "id": 443013018,
+   "lat": 48.1998301,
+   "lon": 16.3536408,
+   "tags": {
+    "addr:city": "Wien",
+    "addr:street": "Mariahilfer Straße",
+    "brand": "Billa Plus",
+    "brand:wikidata": "Q115431077",
+    "name": "Billa Plus",
+    "shop": "supermarket"
+   }
+  },
+  {
+   "type": "node",
+   "id": 653114269,
+   "lat": 48.2077821,
+   "lon": 16.3788175,
+   "tags": {
+    "addr:city": "Wien",
+    "addr:housenumber": "39",
+    "addr:street": "Wollzeile",
+    "brand": "Spar",
+    "brand:wikidata": "Q610492",
+    "name": "Spar",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 5012969121,
+   "lat": 48.2071736,
+   "lon": 16.3799658,
+   "tags": {
+    "addr:housenumber": "2",
+    "addr:street": "Parkring",
+    "brand": "Spar",
+    "brand:wikidata": "Q610492",
+    "name": "Spar",
+    "shop": "supermarket"
+   }
+  }
+ ]
+}

@@ -14,6 +14,7 @@ CONF_FAVORITE_BRANDS = "favorite_brands"
 CONF_MAX_PRICE_PER_LITER = "max_price_per_liter"
 CONF_NOTIFY_ENTITY = "notify_entity"
 CONF_EXTRA_LEAFLETS = "extra_leaflets"
+CONF_RADIUS_KM = "radius_km"
 
 STORE_PENNY = "penny"
 STORE_LIDL = "lidl"
@@ -98,3 +99,6 @@ BRANDS = [
 ]
 
 FILTER_ALL = "Alle"
+
+# Store locations change rarely: ask OpenStreetMap once a week.
+NEARBY_MAX_AGE = timedelta(days=7)

@@ -20,6 +20,7 @@ from .const import (
     CONF_LIDL_REGION,
     CONF_MAX_PRICE_PER_LITER,
     CONF_NOTIFY_ENTITY,
+    CONF_RADIUS_KM,
     CONF_STORES,
     DEFAULT_BILLA_REGION,
     DEFAULT_LIDL_REGION,
@@ -56,6 +57,11 @@ def _schema(values: dict[str, Any]) -> vol.Schema:
                 CONF_BILLA_REGION, **default(CONF_BILLA_REGION, DEFAULT_BILLA_REGION)
             ): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=BILLA_REGIONS, mode=selector.SelectSelectorMode.DROPDOWN)
+            ),
+            vol.Optional(CONF_RADIUS_KM, **default(CONF_RADIUS_KM)): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0, max=100, step=1, unit_of_measurement="km", mode=selector.NumberSelectorMode.BOX
+                )
             ),
             vol.Optional(CONF_AI_TASK_ENTITY, **default(CONF_AI_TASK_ENTITY)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="ai_task")

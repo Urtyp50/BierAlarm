@@ -52,6 +52,11 @@ class DealCountSensor(_Base):
         return {
             "matches": len(matches),
             "errors": data.errors,
+            "radius_km": self.coordinator.radius_km,
+            "nearby": {
+                STORE_NAMES.get(s, s): branches[0] for s, branches in (data.nearby or {}).items() if branches
+            },
+            "out_of_range": [STORE_NAMES.get(s, s) for s in data.out_of_range],
             "deals": [
                 {
                     "store": STORE_NAMES.get(d.store, d.store),
@@ -62,6 +67,7 @@ class DealCountSensor(_Base):
                     "price_per_liter": d.price_per_liter,
                     "price_per_crate": d.price_per_crate,
                     "valid_to": d.valid_to,
+                    "distance_km": self.coordinator.distance(d.store),
                     "match": d.id in matches,
                 }
                 for d in sorted(

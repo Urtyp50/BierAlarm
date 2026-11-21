@@ -19,12 +19,14 @@
           "favorite_brands": "Lieblingsmarken (mit Komma getrennt)",
           "max_price_per_liter": "Alarm unter Literpreis (×10 = Preis pro 20er-Kiste)",
           "notify_entity": "Benachrichtigung an (leer = Home-Assistant-Meldung)",
-          "extra_leaflets": "Weitere PDF-Flugblatt-Links (einer pro Zeile)"
+          "extra_leaflets": "Weitere PDF-Flugblatt-Links (einer pro Zeile)",
+          "radius_km": "Umkreis um dein Zuhause"
         },
         "data_description": {
           "favorite_brands": "z. B. Gösser, Stiegl, Ottakringer. Du bekommst einen Alarm, sobald eine davon in Aktion ist.",
           "max_price_per_liter": "Zusätzlich gibt es einen Alarm, wenn irgendein Bier pro Liter billiger ist.",
-          "ai_task_entity": "PENNY und Lidl funktionieren ohne KI. BILLA gibt es nur als PDF, das die KI einmal pro Woche liest."
+          "ai_task_entity": "PENNY und Lidl funktionieren ohne KI. BILLA gibt es nur als PDF, das die KI einmal pro Woche liest.",
+          "radius_km": "Nur Märkte mit einer Filiale in diesem Umkreis um den Standort aus den Home-Assistant-Einstellungen. 0 = alle. Die Filialen kommen von OpenStreetMap; dafür wird ein grob gerundeter Bereich um dein Zuhause abgefragt."
         }
       }
     }
@@ -45,7 +47,11 @@
           "favorite_brands": "Lieblingsmarken (mit Komma getrennt)",
           "max_price_per_liter": "Alarm unter Literpreis (×10 = Preis pro 20er-Kiste)",
           "notify_entity": "Benachrichtigung an (leer = Home-Assistant-Meldung)",
-          "extra_leaflets": "Weitere PDF-Flugblatt-Links (einer pro Zeile)"
+          "extra_leaflets": "Weitere PDF-Flugblatt-Links (einer pro Zeile)",
+          "radius_km": "Umkreis um dein Zuhause"
+        },
+        "data_description": {
+          "radius_km": "Nur Märkte mit einer Filiale in diesem Umkreis um den Standort aus den Home-Assistant-Einstellungen. 0 = alle. Die Filialen kommen von OpenStreetMap; dafür wird ein grob gerundeter Bereich um dein Zuhause abgefragt."
         }
       }
     }

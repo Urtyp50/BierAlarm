@@ -129,3 +129,32 @@ async def test_brand_switches_and_filters(hass: HomeAssistant, mock_pages) -> No
     deals = hass.states.get("sensor.bieralarm_beer_deals").attributes["deals"]
     crates = [d["price_per_crate"] for d in deals if d["price_per_crate"] is not None]
     assert crates == sorted(crates)
+
+
+async def test_radius_skips_far_stores(hass: HomeAssistant, mock_pages) -> None:
+    from custom_components.bieralarm.sources import nearby
+
+    hass.config.latitude, hass.config.longitude = 48.2085, 16.3731
+    mock_pages.post(nearby.URL, text=(FIXTURES / "osm_wien.json").read_text(encoding="utf-8"))
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="BierAlarm", data={}, options={**OPTIONS, "radius_km": 2}
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    data = entry.runtime_data.data
+    assert data.out_of_range == ["lidl"]
+    assert {d.store for d in data.deals} == {"penny"}
+    assert not any(str(c[1]) == lidl.URL for c in mock_pages.mock_calls)
+    attrs = hass.states.get("sensor.bieralarm_beer_deals").attributes
+    assert attrs["nearby"]["PENNY"]["distance_km"] == 1.3
+    assert attrs["deals"][0]["distance_km"] == 1.3
+
+    # Second refresh uses the cached locations
+    def posts():
+        return sum(1 for c in mock_pages.mock_calls if c[0].lower() == "post")
+
+    assert posts() == 1
+    await entry.runtime_data.async_refresh()
+    assert posts() == 1

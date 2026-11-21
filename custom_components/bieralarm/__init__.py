@@ -137,8 +137,12 @@ def ws_deals(hass: HomeAssistant, connection: websocket_api.ActiveConnection, ms
             "store_names": {**STORE_NAMES, "custom": "Eigenes Flugblatt"},
             "favorite_brands": coordinator.opts.get(CONF_FAVORITE_BRANDS) or "",
             "max_price_per_liter": coordinator.opts.get(CONF_MAX_PRICE_PER_LITER),
+            "radius_km": coordinator.radius_km,
+            "nearby": (data.nearby if data else None) or {},
+            "out_of_range": data.out_of_range if data else [],
             "deals": [
-                {**d.as_dict(), "match": d.id in matches} for d in (data.deals if data else [])
+                {**d.as_dict(), "match": d.id in matches, "distance_km": coordinator.distance(d.store)}
+                for d in (data.deals if data else [])
             ],
         },
     )

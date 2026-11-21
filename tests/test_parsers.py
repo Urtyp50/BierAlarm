@@ -5,7 +5,9 @@ from pathlib import Path
 import pytest
 
 from bieralarm.models import Deal, looks_like_beer, matches_brand, parse_volume
-from bieralarm.sources import billa, leaflet, lidl, mpreis, penny
+import json
+
+from bieralarm.sources import billa, leaflet, lidl, mpreis, nearby, penny
 from bieralarm.sources.nuxt import unflatten
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -114,3 +116,25 @@ def test_ai_answer_parsing():
     assert deals[0].price == 0.69
     assert deals[0].price_per_liter == 1.38
     assert deals[0].source == "ai"
+
+
+WIEN = (48.2085, 16.3731)  # Stephansplatz, only used with the saved fixture
+
+
+def test_nearby_radius():
+    data = json.loads(_fixture("osm_wien.json"))
+    data["elements"].append(
+        {"type": "way", "id": 1, "center": {"lat": 48.2090, "lon": 16.3740},
+         "tags": {"brand:wikidata": "Q873491", "name": "MPREIS Test"}}
+    )
+    found = nearby.parse(data, *WIEN, 2.0)
+    assert set(found) == {"penny", "billa_plus", "mpreis"}  # Lidl is 3 km away, Spar not read
+    assert found["penny"][0]["distance_km"] == 1.3
+    assert found["penny"][0]["distance_km"] <= found["penny"][1]["distance_km"]
+    assert set(nearby.parse(data, *WIEN, 5.0)) >= {"lidl"}
+
+
+def test_nearby_query_rounds_location():
+    query = nearby.build_query(48.208512, 16.373123, 7, ["penny", "lidl", "custom"])
+    assert "Q284688|Q151954" in query
+    assert "48.2085" not in query and "16.3731" not in query

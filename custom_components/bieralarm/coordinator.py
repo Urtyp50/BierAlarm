@@ -27,12 +27,14 @@ from .const import (
     CONF_LIDL_REGION,
     CONF_MAX_PRICE_PER_LITER,
     CONF_NOTIFY_ENTITY,
+    CONF_RADIUS_KM,
     CONF_STORES,
     DEFAULT_BILLA_REGION,
     DEFAULT_LIDL_REGION,
     DEFAULT_STORES,
     DOMAIN,
     EVENT_NEW_DEAL,
+    NEARBY_MAX_AGE,
     REQUEST_TIMEOUT,
     STORAGE_KEY,
     STORAGE_VERSION,
@@ -44,7 +46,7 @@ from .const import (
     USER_AGENT,
 )
 from .models import Deal, matches_brand
-from .sources import billa, leaflet, lidl, mpreis, penny
+from .sources import billa, leaflet, lidl, mpreis, nearby, penny
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,6 +60,9 @@ class BierData:
     errors: dict[str, str] = field(default_factory=dict)
     updated: datetime | None = None
     matches: list[str] = field(default_factory=list)
+    # store -> branches within the radius (None = no radius set or unknown)
+    nearby: dict[str, list[dict]] | None = None
+    out_of_range: list[str] = field(default_factory=list)
 
 
 class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
@@ -116,6 +121,22 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
         self.async_update_listeners()
 
     @property
+    def radius_km(self) -> float | None:
+        value = self.opts.get(CONF_RADIUS_KM)
+        return float(value) if value else None
+
+    def stores_in_range(self, data: BierData) -> list[str]:
+        """Configured stores, minus chains without a branch within the radius."""
+        if data.nearby is None:
+            return self.stores
+        return [s for s in self.stores if s not in nearby.WIKIDATA or data.nearby.get(s)]
+
+    def distance(self, store: str) -> float | None:
+        """Distance to the nearest branch of a store, if known."""
+        branches = (self.data.nearby or {}).get(store) if self.data else None
+        return branches[0]["distance_km"] if branches else None
+
+    @property
     def max_price_per_liter(self) -> float | None:
         value = self.opts.get(CONF_MAX_PRICE_PER_LITER)
         return float(value) if value else None
@@ -128,14 +149,23 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
 
     async def _async_update_data(self) -> BierData:
         data = BierData()
+        if self.radius_km:
+            try:
+                data.nearby = await self._nearby()
+            except Exception as err:  # noqa: BLE001 - without locations, show all stores
+                _LOGGER.warning("BierAlarm: store locations failed: %s", err)
+                data.errors["umkreis"] = f"Filialen im Umkreis nicht abrufbar: {err}"
+                data.nearby = (self._cache.get("nearby") or {}).get("stores")
+        stores = self.stores_in_range(data)
+        data.out_of_range = [s for s in self.stores if s not in stores]
         jobs: dict[str, Any] = {}
-        if STORE_PENNY in self.stores:
+        if STORE_PENNY in stores:
             jobs[STORE_PENNY] = self._fetch_penny()
-        if STORE_LIDL in self.stores:
+        if STORE_LIDL in stores:
             jobs[STORE_LIDL] = self._fetch_lidl()
-        if STORE_MPREIS in self.stores:
+        if STORE_MPREIS in stores:
             jobs[STORE_MPREIS] = self._fetch_mpreis()
-        if any(s in self.stores for s in AI_STORES):
+        if any(s in stores for s in AI_STORES):
             jobs["billa"] = self._fetch_billa()
         if self._extra_leaflets():
             jobs[STORE_CUSTOM] = self._fetch_extra()
@@ -151,8 +181,10 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
                     data.deals.extend(d for d in self.data.deals if d.store in owned)
             else:
                 data.deals.extend(result)
+        # BILLA and BILLA PLUS come from one job: drop the one that is out of range.
+        data.deals = [d for d in data.deals if d.store not in data.out_of_range]
 
-        if jobs and len(data.errors) == len(jobs) and self.data is None:
+        if jobs and len(set(data.errors) & set(jobs)) == len(jobs) and self.data is None:
             raise UpdateFailed(f"Alle Quellen fehlgeschlagen: {data.errors}")
 
         today = _today()
@@ -176,6 +208,24 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
         )
 
     # ---------------------------------------------------------------- sources
+    async def _nearby(self) -> dict[str, list[dict]]:
+        lat, lon, radius = self.hass.config.latitude, self.hass.config.longitude, self.radius_km
+        key = f"{lat:.5f},{lon:.5f},{radius},{','.join(sorted(self.stores))}"
+        cached = self._cache.get("nearby") or {}
+        if cached.get("key") == key and (
+            dt_util.utcnow() - dt_util.parse_datetime(cached["fetched"]) < NEARBY_MAX_AGE
+        ):
+            return cached["stores"]
+        query = nearby.build_query(lat, lon, radius, self.stores)
+        timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT * 2)
+        async with self._session.post(
+            nearby.URL, data={"data": query}, headers={"User-Agent": USER_AGENT}, timeout=timeout
+        ) as resp:
+            resp.raise_for_status()
+            result = nearby.parse(await resp.json(content_type=None), lat, lon, radius)
+        self._cache["nearby"] = {"key": key, "fetched": dt_util.utcnow().isoformat(), "stores": result}
+        return result
+
     async def _get(self, url: str, *, binary: bool = False) -> str | bytes:
         timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT * (4 if binary else 1))
         headers = {

@@ -19,12 +19,14 @@
           "favorite_brands": "Favourite brands (comma separated)",
           "max_price_per_liter": "Alarm below price per liter (×10 = price per 20 crate)",
           "notify_entity": "Notify entity (empty = HA notification)",
-          "extra_leaflets": "Extra PDF leaflet links (one per line)"
+          "extra_leaflets": "Extra PDF leaflet links (one per line)",
+          "radius_km": "Radius around your home"
         },
         "data_description": {
           "favorite_brands": "e.g. Gösser, Stiegl, Ottakringer. You get an alarm when one of them is on offer.",
           "max_price_per_liter": "You also get an alarm when any beer is cheaper than this per liter.",
-          "ai_task_entity": "PENNY and Lidl work without AI. BILLA only publishes a PDF, which is read by the AI once per week."
+          "ai_task_entity": "PENNY and Lidl work without AI. BILLA only publishes a PDF, which is read by the AI once per week.",
+          "radius_km": "Only stores with a branch within this distance of the home location set in Home Assistant. 0 = all. Branches come from OpenStreetMap, which is asked for a coarsely rounded area around your home."
         }
       }
     }
@@ -45,7 +47,11 @@
           "favorite_brands": "Favourite brands (comma separated)",
           "max_price_per_liter": "Alarm below price per liter (×10 = price per 20 crate)",
           "notify_entity": "Notify entity (empty = HA notification)",
-          "extra_leaflets": "Extra PDF leaflet links (one per line)"
+          "extra_leaflets": "Extra PDF leaflet links (one per line)",
+          "radius_km": "Radius around your home"
+        },
+        "data_description": {
+          "radius_km": "Only stores with a branch within this distance of the home location set in Home Assistant. 0 = all. Branches come from OpenStreetMap, which is asked for a coarsely rounded area around your home."
         }
       }
     }
