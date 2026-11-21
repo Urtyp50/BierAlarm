@@ -61,6 +61,8 @@ jobs:
         with:
           name: BierAlarm für Android ${{ github.ref_name }}
           files: dist/*.apk
+          # as pre-release, so HACS keeps offering the Home Assistant releases (tags v*)
+          prerelease: true
           body: |
             BierAlarm als eigene Android-App, ohne Home Assistant.
 
