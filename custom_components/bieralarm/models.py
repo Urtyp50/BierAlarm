@@ -162,6 +162,8 @@ def looks_like_beer(*texts: str | None) -> bool:
     blob = " ".join(t for t in texts if t).lower()
     if "alkoholfrei" in blob and "bier" not in blob:
         return False
+    if re.search(r"brot|mehl|backofen|waschmittel|chips|gebäck|semmel|käse|senf|essig|wurst|gulasch", blob):
+        return False
     return any(re.search(rf"\b{re.escape(w)}", blob) for w in BEER_WORDS)
 
 

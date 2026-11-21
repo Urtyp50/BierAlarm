@@ -36,13 +36,40 @@ def mock_pages(aioclient_mock):
     return aioclient_mock
 
 
-async def test_config_flow_requires_ai_for_billa(hass: HomeAssistant) -> None:
+async def test_config_flow_billa_without_ai(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
     assert result["type"] is FlowResultType.FORM
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {**OPTIONS, "stores": ["billa"]}
-    )
-    assert result["errors"] == {"ai_task_entity": "ai_required"}
+    with patch("custom_components.bieralarm.async_setup_entry", return_value=True):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {**OPTIONS, "stores": ["billa"]}
+        )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_billa_pdf_read_without_ai(hass: HomeAssistant, aioclient_mock) -> None:
+    from custom_components.bieralarm.sources import billa
+
+    page = (FIXTURES / "billa_flugblatt.html").read_text(encoding="utf-8")
+    aioclient_mock.get(billa.URL, text=page)
+    pdfs = billa.find_leaflets(page, "Wien")
+    aioclient_mock.get(pdfs["billa"], content=(FIXTURES / "billa_kw47_bier.pdf").read_bytes())
+    aioclient_mock.get(pdfs["billa_plus"], content=(FIXTURES / "billa_plus_kw47_bier.pdf").read_bytes())
+    options = {**OPTIONS, "stores": ["billa", "billa_plus"], "favorite_brands": "Gösser Märzen"}
+    entry = MockConfigEntry(domain=DOMAIN, title="BierAlarm", data={}, options=options)
+    entry.add_to_hass(hass)
+    with patch("custom_components.bieralarm.coordinator._today", return_value="2026-11-20"):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+    data = entry.runtime_data.data
+    assert not data.errors
+    crate = next(d for d in data.deals if d.store == "billa" and d.price == 13.8)
+    assert crate.title == "Gösser Märzen" and crate.price_per_crate == 13.8
+    assert crate.valid_to == "2026-11-25"
+    assert {d.store for d in data.deals} == {"billa", "billa_plus"}
+    assert crate.id in data.matches
+    calls = aioclient_mock.call_count
+    await entry.runtime_data.async_refresh()  # the PDFs are cached per URL
+    assert aioclient_mock.call_count == calls + 1  # only the leaflet overview page
 
 
 @pytest.fixture(autouse=True)

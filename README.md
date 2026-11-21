@@ -11,8 +11,8 @@ Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreic
 | PENNY | Bier-Kategorie auf penny.at (strukturierte Daten) | Nein |
 | Lidl | Bieraktion-Kategorie auf lidl.at, je Region (Ost/West/Süd) | Nein |
 | MPREIS | Seite „Bier in Aktion“ auf mpreis.at | Nein |
-| BILLA / BILLA PLUS | PDF-Flugblatt von billa.at | Ja |
-| Eigene Flugblätter | Beliebige PDF-Links | Ja |
+| BILLA / BILLA PLUS | PDF-Flugblatt von billa.at, gelesen über die Anordnung auf der Seite | Nein |
+| Eigene Flugblätter | Beliebige PDF-Links | Nur wenn die Anordnung nicht erkannt wird |
 
 - **Preis pro 20er-Kiste**: Jede Aktion wird auf 20 × 0,5 l (10 Liter) umgerechnet, damit Dosen, Träger und Kisten vergleichbar sind (ohne Pfand)
 - **Seitenleiste „BierAlarm“**: alle Aktionen als Karten, sortierbar nach Kistenpreis, Preis, Rabatt oder Ablauf, mit Filter nach Markt und Suche
@@ -28,9 +28,10 @@ Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreic
 
 ### So werden PDF-Flugblätter gelesen
 
-1. BierAlarm lädt das PDF und zieht den Text heraus, ganz ohne KI.
-2. Nur die Seiten, auf denen Bier vorkommt, gehen an deine **KI-Aufgabe** (`ai_task`, z. B. Anthropic, OpenAI, Google Gemini oder Ollama).
-3. Das Ergebnis wird pro Flugblatt gespeichert, also gibt es **einen KI-Aufruf pro Flugblatt und Woche**.
+1. BierAlarm lädt das PDF und liest Text samt Position auf der Seite, ganz ohne KI.
+2. Jeder Biername wird dem großen Preis darunter zugeordnet, dazu Packung, Aktion („6+6“, „-39 %“) und Normalpreis. Gültig-von/bis kommt aus dem Kopf des Flugblatts.
+3. Nur wenn so kein Bier gefunden wird und eine **KI-Aufgabe** (`ai_task`) eingestellt ist, liest die KI die Bier-Seiten.
+4. Das Ergebnis wird pro Flugblatt gespeichert, das PDF wird also nur einmal pro Woche geladen.
 
 ## Installation
 
@@ -61,7 +62,7 @@ Sie zeigt den besten Kistenpreis, eine kleine Karte mit den Filialen im Umkreis 
 | Märkte | Welche Märkte durchsucht werden |
 | Lidl-Region | Ost (Wien/NÖ/Bgld), West (OÖ/Sbg/T/Vbg) oder Süd (Stmk/Ktn) |
 | BILLA-Region | Bevorzugtes Regional-Flugblatt |
-| KI-Aufgabe | Für BILLA und eigene PDFs nötig |
+| KI-Aufgabe | Optional, nur als Reserve für ungewöhnliche PDF-Flugblätter |
 | Umkreis | z. B. `7` km um dein Zuhause, `0` = alle Märkte |
 | Lieblingsmarken | z. B. `Gösser, Stiegl, Ottakringer` |
 | Alarm unter Literpreis | z. B. `1,50` €/l |

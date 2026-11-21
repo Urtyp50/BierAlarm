@@ -11,7 +11,6 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
-    AI_STORES,
     BILLA_REGIONS,
     CONF_AI_TASK_ENTITY,
     CONF_BILLA_REGION,
@@ -88,11 +87,6 @@ def _validate(user_input: dict[str, Any]) -> dict[str, str]:
     errors: dict[str, str] = {}
     if not user_input.get(CONF_STORES) and not user_input.get(CONF_EXTRA_LEAFLETS):
         errors[CONF_STORES] = "no_stores"
-    needs_ai = any(s in AI_STORES for s in user_input.get(CONF_STORES, [])) or user_input.get(
-        CONF_EXTRA_LEAFLETS
-    )
-    if needs_ai and not user_input.get(CONF_AI_TASK_ENTITY):
-        errors[CONF_AI_TASK_ENTITY] = "ai_required"
     return errors
 
 

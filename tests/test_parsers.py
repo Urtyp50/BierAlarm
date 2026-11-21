@@ -7,7 +7,7 @@ import pytest
 from bieralarm.models import Deal, looks_like_beer, matches_brand, parse_alcohol, parse_volume, typical_alcohol
 import json
 
-from bieralarm.sources import billa, leaflet, lidl, mpreis, nearby, penny
+from bieralarm.sources import billa, leaflet, lidl, mpreis, nearby, pdf_layout, penny
 from bieralarm.sources.nuxt import unflatten
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -41,6 +41,8 @@ def test_beer_detection():
     assert looks_like_beer("Gösser Märzen 0,5 Liter")
     assert looks_like_beer("Helles", "Ottakringer")
     assert not looks_like_beer("Vöslauer Mineralwasser")
+    assert not looks_like_beer("Almsenner Pinzgauer Bierkäse Halb Laib")
+    assert not looks_like_beer("Saftiges Weizenmischbrot")
 
 
 def test_deal_math_and_brand_match():
@@ -166,3 +168,20 @@ def test_alcohol():
     assert info["alcohol"] == 4.5 and info["alcohol_typical"] is False
     zipfer = next(d for d in mpreis.parse(_fixture("mpreis_bier.html")) if d.title == "Zipfer Märzen 20x 0,5 Liter")
     assert zipfer.as_dict()["alcohol"] == 5.0 and zipfer.as_dict()["alcohol_typical"] is True
+
+
+def test_billa_pdf_layout():
+    path = FIXTURES / "billa_kw47_bier.pdf"
+    if not path.exists():
+        pytest.skip("fixture missing")
+    deals = {(d.title, d.price): d for d in pdf_layout.parse(path.read_bytes(), "billa", "x", 2026)}
+    assert len(deals) == 8
+    assert deals[("Wieselburger Gold", 14.8)].volume_l == 10.0
+    assert "nördlichen Burgenland" in deals[("Wieselburger Gold", 14.8)].condition
+    otta = deals[("Ottakringer Helles", 0.69)]
+    assert (otta.regular_price, otta.volume_l, otta.condition) == (1.39, 0.5, "6+6 Bei 12 dosen je")
+    assert deals[("Stiegl Goldbräu", 0.86)].condition.startswith("8+4")
+    assert all(d.valid_from == "2026-11-19" and d.valid_to == "2026-11-25" for d in deals.values())
+    plus = {d.title for d in pdf_layout.parse((FIXTURES / "billa_plus_kw47_bier.pdf").read_bytes(), "billa_plus", "x", 2026)}
+    assert {"Pilsner Urquell", "Heineken Lager od. 0.0 %"} <= plus
+    assert not any("Riese" in t or "brot" in t for t in plus)

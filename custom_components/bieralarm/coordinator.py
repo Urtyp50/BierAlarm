@@ -46,7 +46,7 @@ from .const import (
     USER_AGENT,
 )
 from .models import Deal, matches_brand
-from .sources import billa, leaflet, lidl, mpreis, nearby, penny
+from .sources import billa, leaflet, lidl, mpreis, nearby, pdf_layout, penny
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -329,37 +329,37 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
         return deals
 
     async def _analyse_pdf(self, store: str, store_name: str, url: str) -> list[Deal]:
-        """AI analysis is cached per PDF URL, so each leaflet costs one AI call."""
+        """Read a PDF leaflet: first from the page layout (no AI), the AI only as a fallback.
+
+        The result is cached per PDF URL, so each leaflet is read once per week.
+        """
         cached = self._cache["leaflets"].get(url)
-        if cached is not None:
+        if cached is not None and cached.get("parser") in (pdf_layout.VERSION, "ai"):
             return [Deal(**d) for d in cached["deals"]]
-        ai_entity = self.opts.get(CONF_AI_TASK_ENTITY)
-        if not ai_entity:
-            raise UpdateFailed(
-                f"{store_name}: Für PDF-Flugblätter bitte eine KI-Aufgabe (AI Task) in den Optionen wählen"
-            )
         pdf = await self._get(url, binary=True)
-        text = await self.hass.async_add_executor_job(leaflet.extract_beer_text, pdf)
-        if not text:
-            deals: list[Deal] = []
-        else:
-            response = await self.hass.services.async_call(
-                "ai_task",
-                "generate_data",
-                {
-                    "task_name": f"BierAlarm {store_name}",
-                    "entity_id": ai_entity,
-                    "instructions": leaflet.build_instructions(
-                        store_name, text, dt_util.now().year
-                    ),
-                },
-                blocking=True,
-                return_response=True,
-            )
-            answer = (response or {}).get("data")
-            deals = leaflet.parse_ai_answer(answer, store, url)
+        year = dt_util.now().year
+        deals = await self.hass.async_add_executor_job(pdf_layout.parse, pdf, store, url, year)
+        parser = pdf_layout.VERSION
+        ai_entity = self.opts.get(CONF_AI_TASK_ENTITY)
+        if not deals and ai_entity:
+            text = await self.hass.async_add_executor_job(leaflet.extract_beer_text, pdf)
+            if text:
+                response = await self.hass.services.async_call(
+                    "ai_task",
+                    "generate_data",
+                    {
+                        "task_name": f"BierAlarm {store_name}",
+                        "entity_id": ai_entity,
+                        "instructions": leaflet.build_instructions(store_name, text, year),
+                    },
+                    blocking=True,
+                    return_response=True,
+                )
+                deals = leaflet.parse_ai_answer((response or {}).get("data"), store, url)
+                parser = "ai"
         self._cache["leaflets"][url] = {
             "fetched": dt_util.utcnow().isoformat(),
+            "parser": parser,
             "deals": [_deal_fields(d) for d in deals],
         }
         return deals
