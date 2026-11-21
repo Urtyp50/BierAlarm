@@ -204,7 +204,7 @@ class BierAlarmCard extends HTMLElement {
 </style>
 <ha-card>
   <div class="hdr">
-    <div class="ic idle" id="ic"><ha-icon id="ici" icon="mdi:beer"></ha-icon></div>
+    <div class="ic idle" id="ic"><ha-icon id="ici" icon="mdi:bottle-soda-classic"></ha-icon></div>
     <div class="ttl"><div class="nmh" id="hn"></div><div class="sb" id="hs"></div></div>
     <div class="pill idle" id="pill"><span class="dot"></span><span id="pt"></span></div>
   </div>
@@ -455,7 +455,7 @@ class BierAlarmCard extends HTMLElement {
     E.pt.textContent = txt;
     E.pill.className = "pill " + cls;
     E.ic.className = "ic " + (hits ? "beer run" : nErr ? "warn" : "ok");
-    E.ici.setAttribute("icon", hits ? "mdi:beer" : "mdi:beer-outline");
+    E.ici.setAttribute("icon", hits ? "mdi:bottle-soda-classic" : "mdi:bottle-soda-classic-outline");
 
     // best prices
     const bc = this._o(C.best_crate), bl = this._o(C.best_liter);

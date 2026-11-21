@@ -115,7 +115,7 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
         frontend_url_path=PANEL_URL_PATH,
         webcomponent_name=PANEL_COMPONENT,
         sidebar_title="BierAlarm",
-        sidebar_icon="mdi:beer",
+        sidebar_icon="mdi:bottle-soda-classic",
         module_url=f"{PANEL_STATIC_URL}/bieralarm-panel.js?v={version}",
         require_admin=False,
         config={},

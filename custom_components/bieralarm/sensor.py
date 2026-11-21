@@ -32,7 +32,7 @@ class _Base(BierAlarmEntity, SensorEntity):
 
 
 class DealCountSensor(_Base):
-    _attr_icon = "mdi:beer"
+    _attr_icon = "mdi:bottle-soda-classic"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "Aktionen"
     # The full list is for dashboards only, keep it out of the database.
@@ -125,7 +125,7 @@ class BestPriceSensor(_Base):
 class BestCratePriceSensor(BestPriceSensor):
     """Cheapest deal as price for a 20er-Kiste à 0,5 l (10 liters)."""
 
-    _attr_icon = "mdi:beer-outline"
+    _attr_icon = "mdi:bottle-soda-classic-outline"
     _attr_native_unit_of_measurement = "€"
 
     def __init__(self, coordinator: BierAlarmCoordinator) -> None:
