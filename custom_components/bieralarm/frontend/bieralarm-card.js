@@ -4,6 +4,14 @@ const BA_STORE = {
   "BILLA": "#f9a825", "BILLA PLUS": "#e65100", "Eigenes Flugblatt": "#546e7a"
 };
 const BA_ALL = "Alle";
+// Logos are loaded from each store's own website; if one fails, the coloured text badge is shown.
+const BA_LOGO = {
+  "PENNY": "https://www.penny.at/tenant/logo.svg",
+  "Lidl": "https://www.lidl.at/cdn/assets/logos/1.0.1/lidl-logo-shop-cdn.svg",
+  "MPREIS": "https://www.mpreis.at/apple-icon-180x180.webp",
+  "BILLA": "https://assets-eu-01.kc-usercontent.com/cc0b17b0-a734-010a-8710-f644b7ee1f24/ff0150f7-0745-4842-b1de-9fc2b4499ac5/favicon.png",
+  "BILLA PLUS": "https://assets-eu-01.kc-usercontent.com/cc0b17b0-a734-010a-8710-f644b7ee1f24/ff0150f7-0745-4842-b1de-9fc2b4499ac5/favicon.png"
+};
 
 class BierAlarmCard extends HTMLElement {
   static getStubConfig() { return { title: "BierAlarm" }; }
@@ -13,7 +21,9 @@ class BierAlarmCard extends HTMLElement {
       // Entity ids are found automatically (platform bieralarm); set them only to override.
       title: "BierAlarm", subtitle: "Bieraktionen pro 20er-Kiste",
       deals: null, best_crate: null, best_liter: null, filter: null, store_filter: null,
-      max_rows: 40
+      max_rows: 40,
+      store_logos: true,   // false = only coloured text badges
+      logos: {}            // override, e.g. { "PENNY": "/local/penny.png" }
     }, cfg || {});
     if (!this._sr) this._sr = this.attachShadow({ mode: "open" });
     this._built = false;
@@ -106,6 +116,12 @@ class BierAlarmCard extends HTMLElement {
   .row { border-radius:12px; padding:9px 10px; background:var(--secondary-background-color); cursor:pointer; }
   .row.hit { box-shadow:inset 0 0 0 1px rgba(230,81,0,.55); }
   .rtop { display:flex; align-items:center; gap:8px; }
+  .logo { flex:0 0 auto; width:34px; height:34px; border-radius:9px; overflow:hidden; background:#fff;
+          box-shadow:0 0 0 1px var(--divider-color); display:flex; align-items:center; justify-content:center; }
+  .logo img { width:100%; height:100%; object-fit:contain; display:block; }
+  .logo.fail { display:none; }
+  .logo.fail + .st { display:inline-block; }
+  .st.alt { display:none; }
   .st { flex:0 0 auto; font-size:.66rem; font-weight:700; letter-spacing:.03em; padding:3px 7px; border-radius:8px; color:#fff; }
   .nm { flex:1; min-width:0; }
   .nm b { display:block; font-size:.88rem; font-weight:600; color:var(--primary-text-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -311,13 +327,15 @@ class BierAlarmCard extends HTMLElement {
         const col = BA_STORE[d.store] || "#546e7a";
         const pct = this._pct(d.price_per_crate, lo - (hi - lo) * 0.15, hi);
         const bar = d.match ? "#e65100" : pct < 45 ? "#2e7d32" : pct < 75 ? "#ef6c00" : "#8a8a8a";
-        const meta = [d.package && !String(d.title).includes(d.package) ? d.package : null,
+        const logo = C.store_logos ? (C.logos[d.store] || BA_LOGO[d.store]) : null;
+        const meta = [logo ? d.store : null, d.package && !String(d.title).includes(d.package) ? d.package : null,
           d.condition, d.distance_km !== null && d.distance_km !== undefined ? this._fmt(d.distance_km, 1) + " km" : null]
           .filter(Boolean).join(" · ");
         const until = this._date(d.valid_to);
         return `<div class="row${d.match ? " hit" : ""}">
           <div class="rtop">
-            <span class="st" style="background:${col}">${this._esc(d.store)}</span>
+            ${logo ? `<span class="logo" title="${this._esc(d.store)}"><img src="${this._esc(logo)}" alt="${this._esc(d.store)}" loading="lazy" referrerpolicy="no-referrer"></span>` : ""}
+            <span class="st${logo ? " alt" : ""}" style="background:${col}">${this._esc(d.store)}</span>
             <div class="nm"><b>${this._esc(d.title)}</b><em>${this._esc(meta || " ")}</em></div>
             ${d.match ? '<ha-icon class="bell" icon="mdi:bell-ring"></ha-icon>' : ""}
             <div class="pr"><b>${this._eur(d.price_per_crate)}</b><em>${this._eur(d.price)}${until ? " · bis " + until : ""}</em></div>
@@ -326,6 +344,10 @@ class BierAlarmCard extends HTMLElement {
         </div>`;
       }).join("");
       Array.from(E.rows.children).forEach((r) => r.addEventListener("click", () => this._more(C.deals)));
+      E.rows.querySelectorAll(".logo img").forEach((img) => {
+        const fail = () => img.parentElement.classList.add("fail");
+        if (img.complete && !img.naturalWidth) fail(); else img.addEventListener("error", fail);
+      });
     }
     E.more.textContent = shown.length > rows.length ? "… und " + (shown.length - rows.length) + " weitere in der Seitenleiste BierAlarm" : "";
 
