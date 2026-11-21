@@ -1,4 +1,4 @@
-"""One switch per beer brand: on = notify me when this brand is on offer."""
+"""One switch per beer ('Zipfer Urtyp'): on = notify me when it is on offer."""
 
 from __future__ import annotations
 
@@ -7,12 +7,14 @@ from typing import Any
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import slugify
 
 from . import BierAlarmConfigEntry
 from .coordinator import BierAlarmCoordinator
 from .entity import BierAlarmEntity
+from .models import matches_brand
 
 
 async def async_setup_entry(
@@ -21,7 +23,15 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    async_add_entities(BrandSwitch(coordinator, brand) for brand in coordinator.brand_names)
+    switches = [BrandSwitch(coordinator, beer) for beer in coordinator.brand_names]
+    # Drop switches of beers that are no longer offered (e.g. the old per-brand ones).
+    registry = er.async_get(hass)
+    wanted = {s.unique_id for s in switches}
+    prefix = f"{entry.entry_id}_brand_"
+    for reg in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if reg.domain == "switch" and reg.unique_id.startswith(prefix) and reg.unique_id not in wanted:
+            registry.async_remove(reg.entity_id)
+    async_add_entities(switches)
 
 
 class BrandSwitch(BierAlarmEntity, SwitchEntity):
@@ -43,12 +53,12 @@ class BrandSwitch(BierAlarmEntity, SwitchEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         data = self.coordinator.data
-        brand = self._brand.lower()
+        brand, _, sort = self._brand.partition(" ")
         return {
-            "brand": self._brand,
-            "deals": sum(1 for d in data.deals if brand in f"{d.brand or ''} {d.name}".lower())
-            if data
-            else 0,
+            "beer": self._brand,
+            "brand": brand,
+            "sort": sort or "alle Sorten",
+            "deals": sum(1 for d in data.deals if matches_brand(d, [self._brand])) if data else 0,
         }
 
     async def async_turn_on(self, **kwargs: Any) -> None:

@@ -103,6 +103,9 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
         hass.data[f"{DOMAIN}_static"] = True
     stat = await hass.async_add_executor_job((FRONTEND_DIR / "bieralarm-panel.js").stat)
     version = stat.st_mtime_ns
+    card = await hass.async_add_executor_job((FRONTEND_DIR / "bieralarm-card.js").stat)
+    # Dashboard card "custom:bieralarm-card": loaded on every page, no resource to add by hand.
+    frontend.add_extra_js_url(hass, f"{PANEL_STATIC_URL}/bieralarm-card.js?v={card.st_mtime_ns}")
     await panel_custom.async_register_panel(
         hass,
         frontend_url_path=PANEL_URL_PATH,

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 import hashlib
 import re
+import unicodedata
 
 CRATE_LITERS = 10.0  # 20 Flaschen à 0,5 l
 
@@ -160,6 +161,15 @@ def looks_like_beer(*texts: str | None) -> bool:
     return any(re.search(rf"\b{re.escape(w)}", blob) for w in BEER_WORDS)
 
 
+def _norm(text: str) -> str:
+    """Lowercase without accents, so 'Gösser' == 'Gosser' and 'Weißbier' == 'Weissbier'."""
+    text = unicodedata.normalize("NFKD", text.lower().replace("ß", "ss"))
+    return "".join(c for c in text if not unicodedata.combining(c))
+
+
 def matches_brand(deal: Deal, brands: list[str]) -> bool:
-    hay = f"{deal.brand or ''} {deal.name}".lower()
-    return any(b and b.lower() in hay for b in brands)
+    """True when every word of one favourite ('Zipfer Urtyp') appears in the deal."""
+    hay = _norm(f"{deal.brand or ''} {deal.name}")
+    return any(
+        words and all(w in hay for w in words) for words in (_norm(b).split() for b in brands)
+    )

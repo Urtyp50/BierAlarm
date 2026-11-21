@@ -19,7 +19,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     AI_STORES,
-    BRANDS,
+    BEERS,
     CONF_AI_TASK_ENTITY,
     CONF_BILLA_REGION,
     CONF_EXTRA_LEAFLETS,
@@ -100,9 +100,9 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
 
     @property
     def brand_names(self) -> list[str]:
-        """Brands that get a switch: the fixed list plus any typed favourite."""
-        known = {b.lower() for b in BRANDS}
-        return BRANDS + [b for b in self.favorite_brands if b.lower() not in known]
+        """Beers that get a switch: the fixed list plus any typed favourite."""
+        known = {b.lower() for b in BEERS}
+        return BEERS + [b for b in self.favorite_brands if b.lower() not in known]
 
     def favorite_options(self, brand: str, on: bool) -> dict[str, Any]:
         """Options with `brand` added to or removed from the favourite brands."""

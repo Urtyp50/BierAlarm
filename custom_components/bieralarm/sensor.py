@@ -66,6 +66,8 @@ class DealCountSensor(_Base):
                     "price": d.price,
                     "price_per_liter": d.price_per_liter,
                     "price_per_crate": d.price_per_crate,
+                    "condition": d.condition,
+                    "discount_percent": d.discount_percent,
                     "valid_to": d.valid_to,
                     "distance_km": self.coordinator.distance(d.store),
                     "match": d.id in matches,

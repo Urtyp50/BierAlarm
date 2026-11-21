@@ -53,6 +53,11 @@ def test_deal_math_and_brand_match():
     assert deal.title == "Gösser Märzen"
     assert matches_brand(deal, ["gösser"])
     assert not matches_brand(deal, ["Stiegl"])
+    assert matches_brand(deal, ["Gosser Märzen"])
+    urtyp = Deal(store="mpreis", name="Zipfer Urtyp Medium 0,5 Liter", brand="Zipfer")
+    assert matches_brand(urtyp, ["Zipfer Urtyp"])
+    assert not matches_brand(urtyp, ["Zipfer Märzen"])
+    assert matches_brand(urtyp, ["zipfer"])
 
 
 def test_unflatten_devalue():

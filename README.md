@@ -18,7 +18,7 @@ Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreic
 - **Seitenleiste „BierAlarm“**: alle Aktionen als Karten, sortierbar nach Kistenpreis, Preis, Rabatt oder Ablauf, mit Filter nach Markt und Suche
 - **Sensoren**: `sensor.bieralarm_bieraktionen` (Anzahl plus Liste), `sensor.bieralarm_bester_preis_pro_20er_kiste` und `sensor.bieralarm_bester_literpreis`
 - **Umkreis**: nur Märkte mit einer Filiale im Umkreis (z. B. 7 km) um den Standort aus den Home-Assistant-Einstellungen. Die Filialen kommen einmal pro Woche von OpenStreetMap; dabei wird nur ein grob gerundeter Bereich abgefragt.
-- **Marken-Schalter**: `switch.bieralarm_alarm_zipfer` usw., ein Schalter pro Marke: an = benachrichtigen. Sie sind mit *Lieblingsmarken* in den Einstellungen verbunden.
+- **Sorten-Schalter**: `switch.bieralarm_alarm_zipfer_urtyp`, `switch.bieralarm_alarm_zipfer_marzen` usw., ein Schalter pro Biersorte: an = benachrichtigen. Sie sind mit *Lieblingsmarken* in den Einstellungen verbunden. Dort trägst du auch eigene Sorten ein; nur die Marke (z. B. `Zipfer`) heißt alle Sorten.
 - **Filter für Dashboards**: `text.bieralarm_filter` (Suchtext, z. B. `Urtyp`) und `select.bieralarm_store_filter` (Markt)
 - **Alarm**: Benachrichtigung über eine `notify`-Entität (z. B. dein Handy) oder als Home-Assistant-Meldung. Jede Aktion wird nur einmal gemeldet.
 - **Event** `bieralarm_new_deal` für eigene Automationen
@@ -41,6 +41,16 @@ Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreic
 ### Manuell
 
 Den Ordner `custom_components/bieralarm` nach `config/custom_components/` kopieren und Home Assistant neu starten.
+
+## Dashboard-Karte
+
+Die Karte `custom:bieralarm-card` kommt mit der Integration mit, es muss keine Ressource eingetragen werden. Sie findet ihre Entitäten selbst:
+
+```yaml
+type: custom:bieralarm-card
+```
+
+Sie zeigt den besten Kistenpreis, Suche und Markt-Filter, alle Aktionen mit Preis pro 20er-Kiste und Entfernung sowie die Sorten-Schalter, gruppiert nach Marke.
 
 ## Einstellungen
 

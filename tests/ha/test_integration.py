@@ -74,6 +74,9 @@ async def test_setup_sensors_panel_ws_and_alarm(hass: HomeAssistant, mock_pages,
     # Ottakringer is a favourite brand -> at least one alarm event
     assert any("Ottakringer" in e.data["title"] for e in events)
     assert "bieralarm" in hass.data.get("frontend_panels", {})
+    from homeassistant.components.frontend import DATA_EXTRA_MODULE_URL
+
+    assert any("bieralarm-card.js" in u for u in hass.data[DATA_EXTRA_MODULE_URL].urls)
 
     client = await hass_ws_client(hass)
     await client.send_json({"id": 1, "type": "bieralarm/deals"})
@@ -105,19 +108,25 @@ async def test_brand_switches_and_filters(hass: HomeAssistant, mock_pages) -> No
 
     switches = {s.entity_id: s for s in hass.states.async_all("switch")}
     assert hass.states.get("switch.bieralarm_alarm_ottakringer").state == "on", list(switches)
-    assert hass.states.get("switch.bieralarm_alarm_gosser").state == "off"
+    assert hass.states.get("switch.bieralarm_alarm_gosser_marzen").state == "off"
+    assert hass.states.get("switch.bieralarm_alarm_zipfer_urtyp").attributes["sort"] == "Urtyp"
 
     await hass.services.async_call(
-        "switch", "turn_on", {"entity_id": "switch.bieralarm_alarm_gosser"}, blocking=True
+        "switch", "turn_on", {"entity_id": "switch.bieralarm_alarm_gosser_marzen"}, blocking=True
     )
+    await hass.async_block_till_done()
+    assert entry.options["favorite_brands"] == "Ottakringer, Gösser Märzen"
+    assert entry.runtime_data is coordinator  # no reload ...
+    assert len(mock_pages.mock_calls) == calls  # ... and no new download
+    assert hass.states.get("switch.bieralarm_alarm_gosser_marzen").state == "on"
+
+    # Ottakringer was typed in the options: switching it off removes its switch (reload).
     await hass.services.async_call(
         "switch", "turn_off", {"entity_id": "switch.bieralarm_alarm_ottakringer"}, blocking=True
     )
     await hass.async_block_till_done()
-    assert entry.options["favorite_brands"] == "Gösser"
-    assert entry.runtime_data is coordinator  # no reload ...
-    assert len(mock_pages.mock_calls) == calls  # ... and no new download
-    assert hass.states.get("switch.bieralarm_alarm_gosser").state == "on"
+    assert entry.options["favorite_brands"] == "Gösser Märzen"
+    assert hass.states.get("switch.bieralarm_alarm_ottakringer") is None
     assert any("Gösser" in e.data["title"] for e in events)
 
     await hass.services.async_call(
