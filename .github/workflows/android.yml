@@ -1,0 +1,71 @@
+name: Android-App
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["android-v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Pakete für python-for-android
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          pip install --upgrade "buildozer==1.5.0" "cython<3.1" setuptools
+
+      - name: Leser aus der Integration übernehmen
+        run: python android/sync_core.py
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer
+            android/.buildozer
+          key: buildozer-${{ hashFiles('android/buildozer.spec') }}
+
+      - name: APK bauen
+        working-directory: android
+        run: yes | buildozer -v android debug
+
+      - name: APK umbenennen
+        run: |
+          mkdir -p dist
+          cp android/bin/*.apk "dist/BierAlarm-${GITHUB_REF_NAME#android-v}.apk" 2>/dev/null || cp android/bin/*.apk dist/BierAlarm.apk
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BierAlarm-apk
+          path: dist/*.apk
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/android-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: BierAlarm für Android ${{ github.ref_name }}
+          files: dist/*.apk
+          body: |
+            BierAlarm als eigene Android-App, ohne Home Assistant.
+
+            **Installieren:** `BierAlarm-….apk` am Handy herunterladen und öffnen. Android fragt einmal, ob der Browser Apps installieren darf („Unbekannte Apps installieren“).
+
+            - Aktionen von PENNY, Lidl, MPREIS, BILLA, BILLA PLUS, INTERSPAR und HOFER, sortiert nach Preis pro 20er-Kiste
+            - Suche und Filter nach Markt
+            - Benachrichtigung, wenn eine Lieblingssorte in Aktion ist oder eine Kiste unter dein Limit fällt (beim Öffnen der App, höchstens alle 3 Stunden neu geladen)

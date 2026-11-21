@@ -3,3 +3,6 @@ __pycache__/
 .pytest_cache/
 .venv/
 .DS_Store
+android/bieralarm/
+android/bin/
+android/.buildozer/

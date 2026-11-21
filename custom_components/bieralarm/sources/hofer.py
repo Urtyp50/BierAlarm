@@ -15,10 +15,10 @@ from datetime import date, timedelta
 import io
 import re
 
-from ..models import Deal, looks_like_beer, parse_volume
+from ..models import Deal, looks_like_beer, parse_alcohol, parse_volume
 from .pdf_layout import VERSION as LAYOUT_VERSION, _Frag, _fragments
 
-VERSION = f"hofer-1/{LAYOUT_VERSION}"
+VERSION = f"hofer-2/{LAYOUT_VERSION}"
 BASE = "https://katalog.hofer.at"
 
 _PDF = re.compile(r'https://view\.publitas\.com/[^"\'\s<>]+?/pdfs/[^"\'\s<>]+?\.pdf[^"\'\s<>]*')
@@ -143,9 +143,15 @@ def _page_deals(frags: list[_Frag], url: str, year: int) -> list[Deal]:
             if _within(f.size, PACKAGE_SIZE) and abs(f.x - product["x"]) <= 3
             and 0 < product["y"] - f.y <= 45
         ]
-        package_text = " ".join(f.text for f in sorted(package, key=lambda f: -f.y)) or None
-        deals.append(_build(name, price, package_text, frags, prices, url, valid_from, valid_to))
-    return [d for d in deals if d]
+        lines = [f.text for f in sorted(package, key=lambda f: -f.y)]
+        alcohol = parse_alcohol(*lines)
+        # 'zzgl. Pfand € 0,25' and '5,2% Vol.' are not part of the package
+        package_text = " ".join(t for t in lines if not re.match(r"zzgl|.*%\s*Vol", t, re.I)) or None
+        deal = _build(name, price, package_text, frags, prices, url, valid_from, valid_to)
+        if deal:
+            deal.alcohol = alcohol
+            deals.append(deal)
+    return deals
 
 
 def _name(product: dict) -> str:

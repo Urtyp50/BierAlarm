@@ -35,6 +35,16 @@ Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreic
 3. Nur wenn so kein Bier gefunden wird und eine **KI-Aufgabe** (`ai_task`) eingestellt ist, liest die KI die Bier-Seiten.
 4. Das Ergebnis wird pro Flugblatt gespeichert, das PDF wird also nur einmal pro Woche geladen.
 
+## Android-App (ohne Home Assistant)
+
+Unter [Releases](https://github.com/Urtyp50/BierAlarm/releases) gibt es BierAlarm auch als eigene Android-App (`.apk`). Sie liest dieselben Flugblätter direkt am Handy:
+
+- alle Aktionen sortiert nach Preis pro 20er-Kiste, mit Suche und Markt-Filter
+- Lieblingssorten und Kisten-Limit, mit Benachrichtigung beim Öffnen der App (neu geladen höchstens alle 3 Stunden)
+- INTERSPAR und HOFER laden ihr PDF-Flugblatt einmal pro Woche (bis ca. 45 MB), am besten im WLAN
+
+Installieren: APK am Handy herunterladen, öffnen und „Unbekannte Apps installieren“ für den Browser erlauben. Der Quellcode liegt in `android/`, gebaut wird die APK von GitHub Actions (`.github/workflows/android.yml`).
+
 ## Installation
 
 ### Über HACS / Marketplace (benutzerdefiniertes Repository)
