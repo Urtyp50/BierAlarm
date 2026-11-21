@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ..const import STORE_PENNY
-from ..models import Deal, parse_volume
+from ..models import Deal, parse_alcohol, parse_volume
 from .nuxt import extract_nuxt_data, find_product_lists
 
 URL = "https://www.penny.at/kategorie/bier-und-radler-13026"
@@ -56,4 +56,5 @@ def _to_deal(p: dict) -> Deal | None:
         condition=promo.get("promotionText"),
         image=images[0] if images else None,
         url=PRODUCT_URL.format(slug=p["slug"]) if p.get("slug") else URL,
+        alcohol=parse_alcohol(p.get("name"), p.get("alcoholByVolume") and f'{p["alcoholByVolume"]} % vol'),
     )

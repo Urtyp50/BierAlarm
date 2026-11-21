@@ -114,6 +114,9 @@ class BierAlarmCard extends HTMLElement {
           font:inherit; font-size:.74rem; color:var(--secondary-text-color); transition:all .25s ease; }
   .mode ha-icon { --mdc-icon-size:18px; }
   .mode.on { color:#e65100; border-color:#e65100; background:rgba(230,81,0,.12); font-weight:600; }
+  .mode { position:relative; }
+  .mode img.prod { width:36px; height:36px; object-fit:contain; border-radius:8px; background:#fff; padding:2px; box-sizing:border-box; }
+  .mode.pic ha-icon { position:absolute; top:4px; right:5px; --mdc-icon-size:14px; }
   .mode i { font-style:normal; font-size:.66rem; opacity:.8; }
   .rows { display:flex; flex-direction:column; gap:6px; }
   .row { border-radius:12px; padding:9px 10px; background:var(--secondary-background-color); cursor:pointer; }
@@ -404,14 +407,21 @@ class BierAlarmCard extends HTMLElement {
     return !s || s === "unknown" || s === "unavailable" ? "" : s.trim().toLowerCase();
   }
 
+  _alc(d) {
+    if (d.alcohol === null || d.alcohol === undefined) return null;
+    if (!d.alcohol) return "alkoholfrei";
+    return (d.alcohol_typical ? "ca. " : "") + this._fmt(d.alcohol, 1) + " % vol";
+  }
+
   _chips(el, items) {
     // Rebuild only when the set of chips changes, so clicks are not lost while rendering.
-    const sig = items.map((i) => i.id + "|" + i.label + "|" + (i.sub || "")).join(";");
+    const sig = items.map((i) => i.id + "|" + i.label + "|" + (i.sub || "") + "|" + (i.pic || "")).join(";");
     if (el._sig !== sig) {
       el._sig = sig;
       el.innerHTML = items.map((it, i) =>
-        `<button class="mode" data-i="${i}"><ha-icon icon="${it.icon}"></ha-icon>${this._esc(it.label)}${it.sub ? `<i>${this._esc(it.sub)}</i>` : ""}</button>`).join("");
+        `<button class="mode${it.pic ? " pic" : ""}" data-i="${i}">${it.pic ? `<img class="prod" src="${this._esc(it.pic)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ""}<ha-icon icon="${it.icon}"></ha-icon>${this._esc(it.label)}${it.sub ? `<i>${this._esc(it.sub)}</i>` : ""}</button>`).join("");
       Array.from(el.children).forEach((b) => b.addEventListener("click", () => el._items[parseInt(b.dataset.i, 10)].click()));
+      el.querySelectorAll("img.prod").forEach((img) => img.addEventListener("error", () => { img.parentElement.classList.remove("pic"); img.remove(); }));
     }
     el._items = items;
     Array.from(el.children).forEach((b, i) => { b.classList.toggle("on", !!items[i].on); b.disabled = !!items[i].disabled; });
@@ -494,7 +504,7 @@ class BierAlarmCard extends HTMLElement {
         const bar = d.match ? "#e65100" : pct < 45 ? "#2e7d32" : pct < 75 ? "#ef6c00" : "#8a8a8a";
         const logo = C.store_logos ? (C.logos[d.store] || BA_LOGO[d.store]) : null;
         const meta = [logo ? d.store : null, d.package && !String(d.title).includes(d.package) ? d.package : null,
-          d.condition, d.distance_km !== null && d.distance_km !== undefined ? this._fmt(d.distance_km, 1) + " km" : null]
+          this._alc(d), d.condition, d.distance_km !== null && d.distance_km !== undefined ? this._fmt(d.distance_km, 1) + " km" : null]
           .filter(Boolean).join(" · ");
         const until = this._date(d.valid_to);
         return `<div class="row${d.match ? " hit" : ""}">
@@ -554,6 +564,7 @@ class BierAlarmCard extends HTMLElement {
       this._chips(box, g.items.map((b) => ({
         id: b.entity_id, label: b.attributes.sort || b.attributes.beer || b.attributes.friendly_name,
         icon: b.state === "on" ? "mdi:bell-ring" : "mdi:bell-outline",
+        pic: b.attributes.entity_picture || "",
         sub: b.attributes.deals ? b.attributes.deals + " in Aktion" : "",
         on: b.state === "on", disabled: b.state === "unavailable",
         click: () => this._hass.callService("switch", "toggle", { entity_id: b.entity_id })

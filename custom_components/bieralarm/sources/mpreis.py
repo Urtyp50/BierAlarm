@@ -6,7 +6,7 @@ import json
 import re
 
 from ..const import STORE_MPREIS
-from ..models import Deal, parse_volume
+from ..models import Deal, parse_alcohol, parse_volume
 
 URL = "https://www.mpreis.at/m/bier-in-aktion"
 PRODUCT_URL = "https://www.mpreis.at/shop/p/{slug}"
@@ -60,6 +60,7 @@ def _to_deal(p: dict) -> Deal | None:
         condition=promo or None,
         image=p.get("media"),
         url=PRODUCT_URL.format(slug=slug) if slug else URL,
+        alcohol=parse_alcohol(name),
     )
 
 

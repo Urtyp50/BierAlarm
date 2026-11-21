@@ -9,7 +9,7 @@ import re
 from zoneinfo import ZoneInfo
 
 from ..const import STORE_LIDL
-from ..models import Deal, looks_like_beer, parse_volume
+from ..models import Deal, looks_like_beer, parse_alcohol, parse_volume
 
 URL = "https://www.lidl.at/c/bieraktion/s10067981"
 BASE = "https://www.lidl.at"
@@ -81,4 +81,5 @@ def _to_deal(item: dict, region: str) -> Deal | None:
         condition=" · ".join(x for x in (condition, badge_text) if x) or None,
         image=item.get("image"),
         url=f"{BASE}{path}" if path and path.startswith("/") else (path or URL),
+        alcohol=parse_alcohol(title, (item.get("image_V1") or {}).get("accessibility")),
     )

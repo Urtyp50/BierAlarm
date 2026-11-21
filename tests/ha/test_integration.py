@@ -110,6 +110,9 @@ async def test_brand_switches_and_filters(hass: HomeAssistant, mock_pages) -> No
     assert hass.states.get("switch.bieralarm_alarm_ottakringer").state == "on", list(switches)
     assert hass.states.get("switch.bieralarm_alarm_gosser_marzen").state == "off"
     assert hass.states.get("switch.bieralarm_alarm_zipfer_urtyp").attributes["sort"] == "Urtyp"
+    # product photo from the current PENNY offer, kept for the switch
+    assert hass.states.get("switch.bieralarm_alarm_gosser_marzen").attributes["entity_picture"].startswith("https://")
+    assert "entity_picture" not in hass.states.get("switch.bieralarm_alarm_trumer_pils").attributes
 
     await hass.services.async_call(
         "switch", "turn_on", {"entity_id": "switch.bieralarm_alarm_gosser_marzen"}, blocking=True

@@ -73,6 +73,8 @@ class DealCountSensor(_Base):
                     "price": d.price,
                     "price_per_liter": d.price_per_liter,
                     "price_per_crate": d.price_per_crate,
+                    "alcohol": (info := d.as_dict())["alcohol"],
+                    "alcohol_typical": info["alcohol_typical"],
                     "condition": d.condition,
                     "discount_percent": d.discount_percent,
                     "valid_to": d.valid_to,

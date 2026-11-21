@@ -51,6 +51,10 @@ class BrandSwitch(BierAlarmEntity, SwitchEntity):
         return any(b.lower() == self._brand.lower() for b in self.coordinator.favorite_brands)
 
     @property
+    def entity_picture(self) -> str | None:
+        return self.coordinator.beer_image(self._brand)
+
+    @property
     def extra_state_attributes(self) -> dict[str, Any]:
         data = self.coordinator.data
         brand, _, sort = self._brand.partition(" ")

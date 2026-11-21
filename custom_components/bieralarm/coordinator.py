@@ -105,6 +105,25 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
         known = {b.lower() for b in BEERS}
         return BEERS + [b for b in self.favorite_brands if b.lower() not in known]
 
+    def beer_image(self, beer: str) -> str | None:
+        """Product photo of this beer from the latest deal that showed it."""
+        return (self._cache.get("images") or {}).get(beer.lower())
+
+    def _remember_images(self, deals: list[Deal]) -> None:
+        """Keep one product photo per beer, also after the offer has ended."""
+        images: dict[str, str] = self._cache.setdefault("images", {})
+        for beer in self.brand_names:
+            radler = "radler" in beer.lower()
+            for deal in deals:
+                if (
+                    deal.image
+                    and deal.image.startswith("http")
+                    and ("radler" in deal.title.lower()) == radler
+                    and matches_brand(deal, [beer])
+                ):
+                    images[beer.lower()] = deal.image
+                    break
+
     def favorite_options(self, brand: str, on: bool) -> dict[str, Any]:
         """Options with `brand` added to or removed from the favourite brands."""
         brands = [b for b in self.favorite_brands if b.lower() != brand.lower()]
@@ -194,6 +213,7 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
         data.deals.sort(key=lambda d: (d.price_per_liter is None, d.price_per_liter or 0, d.price or 0))
         data.updated = dt_util.utcnow()
         data.matches = [d.id for d in data.deals if self.is_match(d)]
+        self._remember_images(data.deals)
         await self._announce(data)
         self._prune_cache()
         await self._store.async_save(self._cache)
@@ -390,8 +410,9 @@ def _today() -> str:
 
 def _deal_fields(deal: Deal) -> dict:
     data = deal.as_dict()
-    for key in ("id", "title", "price_per_liter", "price_per_crate", "discount_percent"):
+    for key in ("id", "title", "price_per_liter", "price_per_crate", "discount_percent", "alcohol_typical"):
         data.pop(key, None)
+    data["alcohol"] = deal.alcohol
     return data
 
 
@@ -404,4 +425,6 @@ def _line(deal: Deal) -> str:
     )
     store = STORE_NAMES.get(deal.store, deal.store)
     extra = f" – {deal.condition}" if deal.condition else ""
-    return f"• {store}: {deal.title} {deal.package or ''} {price}{per_l}{extra}".replace("  ", " ")
+    alcohol = deal.as_dict()["alcohol"]
+    alc = f" · {alcohol:.1f} % vol".replace(".", ",") if alcohol else ""
+    return f"• {store}: {deal.title} {deal.package or ''}{alc} {price}{per_l}{extra}".replace("  ", " ")

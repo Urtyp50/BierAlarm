@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from bieralarm.models import Deal, looks_like_beer, matches_brand, parse_volume
+from bieralarm.models import Deal, looks_like_beer, matches_brand, parse_alcohol, parse_volume, typical_alcohol
 import json
 
 from bieralarm.sources import billa, leaflet, lidl, mpreis, nearby, penny
@@ -150,3 +150,19 @@ def test_reverse_address():
     assert nearby.parse_address(answer) == "Stadtplatz 27, 4400 Steyr"
     assert nearby.parse_address({"display_name": "Irgendwo"}) == "Irgendwo"
     assert nearby.reverse_params(48.0381234, 14.4199876)["lat"] == "48.03812"
+
+
+def test_alcohol():
+    assert parse_alcohol("Sechserpack Dosen helles Bier mit 4,5 % Alkoholgehalt.") == 4.5
+    assert parse_alcohol("Zipfer Bier 0,0% alkoholfrei") == 0.0
+    assert parse_alcohol("Gösser Märzen 0,5 Liter") is None
+    assert typical_alcohol(Deal(store="penny", name="Urtyp", brand="Zipfer")) == 5.4
+    assert typical_alcohol(Deal(store="penny", name="Naturradler", brand="Gösser")) == 2.0
+    assert typical_alcohol(Deal(store="penny", name="Märzen Radler", brand="Gösser")) is None
+    assert typical_alcohol(Deal(store="penny", name="Bockbier", brand="Unbekannt")) is None
+    lidl_hell = next(d for d in lidl.parse(_fixture("lidl_bier.html"), "1") if d.alcohol)
+    assert lidl_hell.alcohol == 4.5
+    info = lidl_hell.as_dict()
+    assert info["alcohol"] == 4.5 and info["alcohol_typical"] is False
+    zipfer = next(d for d in mpreis.parse(_fixture("mpreis_bier.html")) if d.title == "Zipfer Märzen 20x 0,5 Liter")
+    assert zipfer.as_dict()["alcohol"] == 5.0 and zipfer.as_dict()["alcohol_typical"] is True

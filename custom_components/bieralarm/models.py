@@ -64,6 +64,7 @@ class Deal:
     image: str | None = None
     url: str | None = None
     source: str = "web"
+    alcohol: float | None = None  # % vol, when the shop states it
     extra: dict = field(default_factory=dict)
 
     @property
@@ -117,6 +118,9 @@ class Deal:
             price_per_crate=self.price_per_crate,
             discount_percent=self.discount_percent,
         )
+        typical = None if self.alcohol is not None else typical_alcohol(self)
+        data["alcohol"] = self.alcohol if self.alcohol is not None else typical
+        data["alcohol_typical"] = typical is not None
         return data
 
 
@@ -173,3 +177,58 @@ def matches_brand(deal: Deal, brands: list[str]) -> bool:
     return any(
         words and all(w in hay for w in words) for words in (_norm(b).split() for b in brands)
     )
+
+
+_ALC = re.compile(r"(\d{1,2}(?:[.,]\d{1,2})?)\s*%\s*(?:vol|alk)", re.I)
+
+
+def parse_alcohol(*texts: str | None) -> float | None:
+    """'4,5 % Alkoholgehalt', '5,2% vol.' -> 4.5 / 5.2; 'alkoholfrei' -> 0."""
+    blob = " ".join(t for t in texts if t)
+    found = _ALC.search(blob)
+    if found:
+        value = _f(found.group(1))
+        return value if 0 <= value <= 15 else None
+    if re.search(r"alkoholfrei|\b0[,.]0\s*%", blob, re.I):
+        return 0.0
+    return None
+
+
+# Typical values from brewery or retailer listings, used when the shop gives none.
+TYPICAL_ALCOHOL = {
+    "Zipfer Märzen": 5.0,
+    "Zipfer Urtyp": 5.4,
+    "Gösser Märzen": 5.2,
+    "Gösser Gold": 5.3,
+    "Gösser Zwickl": 5.2,
+    "Gösser Naturradler": 2.0,
+    "Stiegl Goldbräu": 5.0,
+    "Ottakringer Helles": 5.2,
+    "Ottakringer Wiener Original": 5.3,
+    "Ottakringer Zwickl": 5.2,
+    "Puntigamer": 5.1,
+    "Kaiser Märzen": 5.0,
+    "Kaiser Fasstyp": 5.0,
+    "Kaiser Doppelmalz": 4.7,
+    "Schwechater Bier": 5.0,
+    "Wieselburger Gold": 5.0,
+    "Egger Märzen": 5.0,
+    "Hirter Privat Pils": 5.2,
+    "Trumer Pils": 4.9,
+    "Heineken": 5.0,
+}
+
+
+def typical_alcohol(deal: Deal) -> float | None:
+    """Most specific table entry whose words all appear in the deal (radler only for radler)."""
+    hay = _norm(f"{deal.brand or ''} {deal.name}")
+    if "alkoholfrei" in hay:
+        return 0.0
+    best: tuple[int, float] | None = None
+    for beer, value in TYPICAL_ALCOHOL.items():
+        words = _norm(beer).split()
+        if ("radler" in hay) != any("radler" in w for w in words):
+            continue
+        if all(w in hay for w in words) and (best is None or len(words) > best[0]):
+            best = (len(words), value)
+    return best[1] if best else None
