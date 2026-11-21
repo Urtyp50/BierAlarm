@@ -16,7 +16,7 @@ Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreic
 - **Seitenleiste „BierAlarm“**: alle Aktionen als Karten, sortierbar nach Kistenpreis, Preis, Rabatt oder Ablauf, mit Filter nach Markt und Suche
 - **Sensoren**: `sensor.bieralarm_bieraktionen` (Anzahl plus Liste), `sensor.bieralarm_bester_preis_pro_20er_kiste` und `sensor.bieralarm_bester_literpreis`
 - **Marken-Schalter**: `switch.bieralarm_alarm_zipfer` usw., ein Schalter pro Marke: an = benachrichtigen. Sie sind mit *Lieblingsmarken* in den Einstellungen verbunden.
-- **Filter für Dashboards**: `text.bieralarm_filter` (Suchtext, z. B. `Urtyp`) und `select.bieralarm_markt_filter` (Markt)
+- **Filter für Dashboards**: `text.bieralarm_filter` (Suchtext, z. B. `Urtyp`) und `select.bieralarm_store_filter` (Markt)
 - **Alarm**: Benachrichtigung über eine `notify`-Entität (z. B. dein Handy) oder als Home-Assistant-Meldung. Jede Aktion wird nur einmal gemeldet.
 - **Event** `bieralarm_new_deal` für eigene Automationen
 - **Aktion** `bieralarm.refresh`, optional mit `reanalyse: true`, damit die KI die PDFs neu liest
