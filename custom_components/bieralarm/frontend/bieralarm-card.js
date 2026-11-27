@@ -66,8 +66,8 @@ class BierAlarmCard extends HTMLElement {
   }
   _fmt(v, d) { return v === null || v === undefined ? "–" : Number(v).toLocaleString("de-AT", { minimumFractionDigits: d, maximumFractionDigits: d }); }
   _eur(v) { return v === null || v === undefined ? "–" : "€ " + this._fmt(v, 2); }
-  _date(s) { if (!s) return null; const p = s.split("-"); return p.length === 3 ? p[2] + "." + p[1] + "." : s; }
-  _esc(s) { return String(s === null || s === undefined ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
+  _date(s) { if (!s) return null; const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(String(s)); return m ? m[2] + "." + m[1] + "." : this._esc(s); }
+  _esc(s) { return String(s === null || s === undefined ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); }
   _pct(v, lo, hi) { return v === null || hi <= lo ? 0 : Math.max(4, Math.min(100, ((v - lo) / (hi - lo)) * 100)); }
 
   _build() {

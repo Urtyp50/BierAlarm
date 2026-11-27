@@ -125,6 +125,32 @@ def test_ai_answer_parsing():
     assert deals[0].source == "ai"
 
 
+def test_ai_answer_is_untrusted():
+    """A leaflet can steer the AI (prompt injection): only clean values may reach the dashboard."""
+    answer = {
+        "deals": [
+            {
+                "brand": "Zipfer",
+                "name": "Urtyp",
+                "price": 0.79,
+                "valid_from": "<img src=x onerror=alert(1)>",
+                "valid_to": "2026-11-25-<script>alert(1)</script>",
+                "package": {"html": "<b>x</b>"},
+                "condition": "x" * 5000,
+            },
+            {"name": "Märzen", "price": float("nan")},
+            {"name": "Gösser", "price": True},
+            {"name": "Stiegl", "price": 0.89, "valid_from": "2026-02-30", "valid_to": "2026-11-25"},
+        ]
+    }
+    deals = leaflet.parse_ai_answer(answer, "custom", "https://example.invalid/x.pdf")
+    assert [d.name for d in deals] == ["Urtyp", "Stiegl"]
+    urtyp, stiegl = deals
+    assert (urtyp.valid_from, urtyp.valid_to, urtyp.package) == (None, None, None)
+    assert len(urtyp.condition) <= leaflet.MAX_FIELD
+    assert (stiegl.valid_from, stiegl.valid_to) == (None, "2026-11-25")
+
+
 WIEN = (48.2085, 16.3731)  # Stephansplatz, only used with the saved fixture
 
 
@@ -151,7 +177,7 @@ def test_reverse_address():
     answer = {"address": {"road": "Stadtplatz", "house_number": "27", "postcode": "4400", "town": "Steyr"}}
     assert nearby.parse_address(answer) == "Stadtplatz 27, 4400 Steyr"
     assert nearby.parse_address({"display_name": "Irgendwo"}) == "Irgendwo"
-    assert nearby.reverse_params(48.0381234, 14.4199876)["lat"] == "48.03812"
+    assert nearby.reverse_params(48.0381234, 14.4199876)["lat"] == "48.038"  # ~100 m, not the exact home
 
 
 def test_alcohol():

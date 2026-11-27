@@ -6,13 +6,17 @@ that mention beer. Step 2: ask the AI to turn that messy text into JSON.
 
 from __future__ import annotations
 
+from datetime import date
 from io import BytesIO
 import json
+import math
 import re
 
 from ..models import Deal, looks_like_beer, parse_volume
 
 MAX_CHARS = 24000
+MAX_FIELD = 120
+_ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 INSTRUCTIONS = """Du bekommst den Rohtext aus einem österreichischen Supermarkt-Flugblatt ({store}).
 Der Text ist durcheinander: Spalten sind vermischt, Preise stehen oft ohne Komma
@@ -77,19 +81,19 @@ def parse_ai_answer(answer, store: str, url: str) -> list[Deal]:
         brand = str(item.get("brand") or "").strip() or None
         if price is None or not (name or brand):
             continue
-        package = item.get("package") or None
+        package = _text(item.get("package"))
         deals.append(
             Deal(
                 store=store,
-                name=name or brand or "Bier",
-                brand=brand,
+                name=(name or brand or "Bier")[:MAX_FIELD],
+                brand=brand[:MAX_FIELD] if brand else None,
                 price=price,
                 regular_price=_num(item.get("regular_price")),
                 package=package,
                 volume_l=parse_volume(package),
-                valid_from=item.get("valid_from") or None,
-                valid_to=item.get("valid_to") or None,
-                condition=item.get("condition") or None,
+                valid_from=_date(item.get("valid_from")),
+                valid_to=_date(item.get("valid_to")),
+                condition=_text(item.get("condition")),
                 url=url,
                 source="ai",
             )
@@ -97,10 +101,31 @@ def parse_ai_answer(answer, store: str, url: str) -> list[Deal]:
     return deals
 
 
+def _text(value) -> str | None:
+    """The AI answer is untrusted (the leaflet text can steer it): plain, short strings only."""
+    if value is None or isinstance(value, (dict, list)):
+        return None
+    text = str(value).strip()
+    return text[:MAX_FIELD] or None
+
+
+def _date(value) -> str | None:
+    """Only real ISO dates; anything else (e.g. injected HTML) is dropped."""
+    text = str(value or "").strip()
+    if not _ISO_DATE.match(text):
+        return None
+    try:
+        return date.fromisoformat(text).isoformat()
+    except ValueError:
+        return None
+
+
 def _num(value) -> float | None:
     if value is None:
         return None
+    if isinstance(value, bool):
+        return None
     if isinstance(value, (int, float)):
-        return float(value)
+        return float(value) if math.isfinite(value) else None
     match = re.search(r"\d+(?:[.,]\d+)?", str(value))
     return float(match.group(0).replace(",", ".")) if match else None

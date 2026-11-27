@@ -78,12 +78,12 @@ REVERSE_URL = "https://nominatim.openstreetmap.org/reverse"
 
 
 def reverse_params(lat: float, lon: float) -> dict:
-    """Ask OpenStreetMap once for the street address of the start point."""
+    """Ask OpenStreetMap once for the street near the start point (position rounded to ~100 m)."""
     return {
         "format": "jsonv2",
-        "lat": f"{lat:.5f}",
-        "lon": f"{lon:.5f}",
-        "zoom": 18,
+        "lat": f"{lat:.3f}",
+        "lon": f"{lon:.3f}",
+        "zoom": 17,
         "addressdetails": 1,
         "accept-language": "de",
     }

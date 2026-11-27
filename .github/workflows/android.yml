@@ -1,11 +1,9 @@
 name: Android-App
 
+# Deaktiviert: baut nicht mehr automatisch (kein Push-/Tag-Trigger).
+# Zum Reaktivieren die push-Trigger wiederherstellen.
 on:
   workflow_dispatch:
-  push:
-    tags: ["android-v*"]
-    branches: [main]
-    paths: ["android/**", ".github/workflows/android.yml"]
 
 permissions:
   contents: write

@@ -10,6 +10,7 @@ import logging
 from typing import Any
 
 import aiohttp
+from yarl import URL
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -55,6 +56,9 @@ _LOGGER = logging.getLogger(__name__)
 
 STORE_CUSTOM = "custom"
 _JOB_STORES = {"billa": AI_STORES}
+# HOFER's catalog PDF is about 45 MB; anything far bigger is not a leaflet.
+MAX_PDF_BYTES = 120_000_000
+MAX_PAGE_BYTES = 15_000_000
 
 
 @dataclass
@@ -120,7 +124,7 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
             for deal in deals:
                 if (
                     deal.image
-                    and deal.image.startswith("http")
+                    and deal.image.startswith("https://")
                     and ("radler" in deal.title.lower()) == radler
                     and matches_brand(deal, [beer])
                 ):
@@ -244,8 +248,9 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
     # ---------------------------------------------------------------- sources
     async def _home_address(self) -> str | None:
         """Address of the home location, looked up once and cached (shown in the card)."""
-        lat, lon = self.hass.config.latitude, self.hass.config.longitude
-        key = f"{lat:.5f},{lon:.5f}"
+        # Rounded to about 100 m: OpenStreetMap does not get the exact home position.
+        lat, lon = round(self.hass.config.latitude, 3), round(self.hass.config.longitude, 3)
+        key = f"{lat:.3f},{lon:.3f}"
         cached = self._cache.get("home_address") or {}
         if cached.get("key") == key:
             return cached.get("text")
@@ -291,6 +296,7 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
         return result
 
     async def _get(self, url: str, *, binary: bool = False) -> str | bytes:
+        """Download a page or PDF, with a size limit and no https -> http downgrade on redirects."""
         timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT * (8 if binary else 1))
         headers = {
             "User-Agent": USER_AGENT,
@@ -301,7 +307,19 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
             if resp.status == 403:
                 raise UpdateFailed(f"{url}: Zugriff verweigert (403)")
             resp.raise_for_status()
-            return await resp.read() if binary else await resp.text()
+            if url.startswith("https://") and resp.url.scheme != "https":
+                raise UpdateFailed(f"{url}: Weiterleitung auf unverschlüsselte Adresse abgelehnt")
+            limit = MAX_PDF_BYTES if binary else MAX_PAGE_BYTES
+            if (resp.content_length or 0) > limit:
+                raise UpdateFailed(f"{url}: Datei zu groß ({resp.content_length} Bytes)")
+            body = bytearray()
+            async for chunk in resp.content.iter_chunked(1 << 16):
+                body.extend(chunk)
+                if len(body) > limit:
+                    raise UpdateFailed(f"{url}: Datei zu groß (über {limit // 1_000_000} MB)")
+            if binary:
+                return bytes(body)
+            return body.decode(resp.get_encoding(), errors="replace")
 
     async def _fetch_penny(self) -> list[Deal]:
         return penny.parse(await self._get(penny.URL))
@@ -352,6 +370,9 @@ class BierAlarmCoordinator(DataUpdateCoordinator[BierData]):
             location = resp.headers.get("Location")
             if resp.status not in (301, 302, 303, 307) or not location:
                 raise UpdateFailed(f"INTERSPAR: PDF-Download nicht verfügbar ({resp.status})")
+            location = str(resp.url.join(URL(location)))
+            if not location.startswith("https://"):
+                raise UpdateFailed("INTERSPAR: PDF-Link ist nicht https, abgelehnt")
         return await self._get(location, binary=True)
 
     async def _fetch_hofer(self) -> list[Deal]:

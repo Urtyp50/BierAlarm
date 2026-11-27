@@ -2,6 +2,11 @@
 
 # BierAlarm
 
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?logo=homeassistantcommunitystore&logoColor=white)](https://hacs.xyz/docs/faq/custom_repositories/)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.8%2B-18BCF2.svg?logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
+[![Integration](https://img.shields.io/badge/Typ-Integration-blue.svg)](#installation)
+[![Version](https://img.shields.io/github/v/release/Urtyp50/BierAlarm?filter=v*&label=Version)](https://github.com/Urtyp50/BierAlarm/releases)
+
 Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreichischer Supermärkte findet. Sie zeigt sie in einer eigenen Seite in der Seitenleiste an und schlägt Alarm, wenn deine Lieblingsmarke in Aktion ist oder der Literpreis unter dein Limit fällt.
 
 ## Was es kann
@@ -19,7 +24,7 @@ Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreic
 - **Preis pro 20er-Kiste**: Jede Aktion wird auf 20 × 0,5 l (10 Liter) umgerechnet, damit Dosen, Träger und Kisten vergleichbar sind (ohne Pfand)
 - **Seitenleiste „BierAlarm“**: alle Aktionen als Karten, sortierbar nach Kistenpreis, Preis, Rabatt oder Ablauf, mit Filter nach Markt und Suche
 - **Sensoren**: `sensor.bieralarm_bieraktionen` (Anzahl plus Liste), `sensor.bieralarm_bester_preis_pro_20er_kiste` und `sensor.bieralarm_bester_literpreis`
-- **Umkreis** (`number.bieralarm_radius`, auch in der Karte mit − / + änderbar): nur Märkte mit einer Filiale im Umkreis (z. B. 7 km) um den Standort aus den Home-Assistant-Einstellungen. Die Filialen kommen einmal pro Woche von OpenStreetMap; dabei wird nur ein grob gerundeter Bereich abgefragt.
+- **Umkreis** (`number.bieralarm_radius`, auch in der Karte mit − / + änderbar): nur Märkte mit einer Filiale im Umkreis (z. B. 7 km) um den Standort aus den Home-Assistant-Einstellungen. Die Filialen kommen einmal pro Woche von OpenStreetMap; dabei wird nur ein grob gerundeter Bereich abgefragt. Für die Adresse des Startpunkts in der Karte geht einmalig eine auf ca. 100 m gerundete Position an OpenStreetMap (Nominatim).
 - **Preis-Alarm** (`number.bieralarm_alarm_below_crate_price`): Glocke und Benachrichtigung, wenn eine 20er-Kiste höchstens so viel kostet. 0 = nur die gewählten Sorten.
 - **Sorten-Schalter**: `switch.bieralarm_alarm_zipfer_urtyp`, `switch.bieralarm_alarm_zipfer_marzen` usw., ein Schalter pro Biersorte: an = benachrichtigen. Jeder Schalter zeigt das Produktfoto der letzten Aktion dieser Sorte. Sie sind mit *Lieblingsmarken* in den Einstellungen verbunden. Dort trägst du auch eigene Sorten ein; nur die Marke (z. B. `Zipfer`) heißt alle Sorten.
 - **Alkoholgehalt** in % vol bei jeder Aktion: aus den Angaben des Markts, sonst ein typischer Wert der Sorte (in der Karte mit „ca.“ markiert)
@@ -36,6 +41,8 @@ Home-Assistant-Integration, die **Bieraktionen** in den Flugblättern österreic
 4. Das Ergebnis wird pro Flugblatt gespeichert, das PDF wird also nur einmal pro Woche geladen.
 
 ## Android-App (ohne Home Assistant)
+
+> **Deaktiviert:** Die Android-App wird derzeit nicht mehr gebaut oder weiterentwickelt. Vorhandene APKs unter Releases bekommen keine Updates.
 
 Unter [Releases](https://github.com/Urtyp50/BierAlarm/releases) gibt es BierAlarm auch als eigene Android-App (`.apk`). Sie liest dieselben Flugblätter direkt am Handy:
 
