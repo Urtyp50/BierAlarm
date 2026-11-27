@@ -1,21 +1,33 @@
-# Security Policy
+# Sicherheit
 
-## Supported Versions
+## Unterstützte Versionen
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Sicherheitsupdates gibt es nur für die **jeweils neueste Version** der Home-Assistant-Integration (Releases mit Tag `v*`). Bitte vor einer Meldung über HACS auf die neueste Version aktualisieren.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| Version | Unterstützt |
+|---|---|
+| neueste `v*`-Version | ✅ |
+| ältere Versionen | ❌ |
+| Android-App (`android-v*`) | ❌ eingestellt |
 
-## Reporting a Vulnerability
+## Sicherheitslücke melden
 
-Use this section to tell people how to report a vulnerability.
+Bitte **kein öffentliches Issue** anlegen. Stattdessen vertraulich über GitHub melden:
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+1. Im Repository auf **Security → Report a vulnerability** gehen
+   (direkt: <https://github.com/Urtyp50/BierAlarm/security/advisories/new>)
+2. Beschreiben, was passiert, wie man es nachstellt und welche Version betroffen ist
+
+Was dann passiert:
+
+- Eine erste Antwort gibt es in der Regel **innerhalb einer Woche**.
+- Bestätigte Lücken werden so schnell wie möglich in einer neuen Version behoben. Danach wird die Meldung als Security Advisory veröffentlicht, auf Wunsch mit Nennung des Melders.
+- Wenn eine Meldung abgelehnt wird, gibt es eine kurze Begründung.
+
+## Was als Sicherheitslücke zählt
+
+BierAlarm lädt Webseiten und PDF-Flugblätter von Supermärkten und zeigt die Daten im Home-Assistant-Dashboard an. Besonders interessant sind deshalb:
+
+- Code- oder HTML-Einschleusung (XSS) über Daten aus Flugblättern, Webseiten oder der KI-Antwort
+- Abstürze oder Hänger von Home Assistant durch manipulierte PDFs oder Antworten
+- Weitergabe von Standort- oder anderen persönlichen Daten über das hinaus, was im README beschrieben ist
